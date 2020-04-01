@@ -19,3 +19,9 @@ For drug dispensing: the medicated duration was calculated for each unique chemi
 ![picture](/images/disp_index.png)
 
 For hospital admissions, similar process was followed. The time spent in hospital for each month was converted to an indexed sequence. This was repeated for each ICD-10 code and each individual. The resulting dataset appears below.
+
+## FAQ
+<strong>Was PHO enrolment based on new/re-enrolment in 2012 only (ie tight criterion for PHO enrolment) or new/reenrolment over the previous 3 years?</strong>
+
+<p>The core dataset used the original tight criteria of requiring hard-coded dates. However, this shouldn't be considered "tight". In reality, I initiated the whole process by first combining ALL YEARS and ALL QUARTERS of the PHO collection which created a large 2004-2017 PHO dataset (~260M row). Individuals were then grouped by their YEAR of contact using two types of dates – the ‘last consult date’ and the ‘enrolment date’. From there, I was able to establish their YEAR of contact based on actual hardcoded dates (i.e. either the last consult date or the enrolment date). So indeed this is still the “tight” criterion (as hardcoded dates are required for each year) but this approach allows for the inclusion and usage of all other yearly/quarterly datasets in the entire PHO collection. </p>
+
