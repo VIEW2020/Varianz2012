@@ -5,7 +5,8 @@ and Louisa Jorm from the University of New South Wales in December 2019. The ini
 using a 2012 VARIANZ population. Suneela Mehta from VIEW will update the 2006 VARIANZ policy equation using the prior statistical learning method, whereas Sebastiano will aim to create a survival model using a deep learning method. Further, Sebastiano aims to explore additional risk factors and predictors as part of a deep learning pipeline, and determine the added effects of prior unknown variables.
 
 ## Core Data
-The core dataset is the VARIANZ 2012 health contact population. Information from the National Health Collection are linked to provide demographic, hospitalised history, hospitalised outcomes, death-specific outcomes, and baseline treatment. To ensure consistency, the exclusion criteria have been applied in data management. <a href="https://github.com/VIEW2020/Varianz2012/wiki" target="_blank">See the repository Wiki</a> for more information regarding the core dataset.
+<a href="https://github.com/VIEW2020/Varianz2012/wiki" target="_blank">See Wiki</a> for details regarding the core dataset including variable descriptions.<br></br>
+The core dataset is the VARIANZ 2012 health contact population. Information from the National Health Collection are linked to provide demographic, hospitalised history, hospitalised outcomes, death-specific outcomes, and baseline treatment. To ensure consistency, the exclusion criteria (see Wiki) have been applied in data management. 
 
 ## Auxiliary Dataset
 A monthly index from 1-60 was created to mark each month prior to index time-point; as there are 60 months in the 5 years prior to 2012-12-31. The index value of 1 marks January 2008 and the index value of 60 marks December 2012. The aim is to obtain a sequence of between 1 and 60 that represents the monthly duration in which each feature is activated. Note: a feature is a distinct chemical or ICD code. Two auxillary datasets were provided to Sebastinano:
