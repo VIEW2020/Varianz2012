@@ -89,7 +89,7 @@ def main():
         log_hr_matrix[:, i] = log_hr
     
     mean_hr = np.exp(log_hr_matrix.mean(axis=1))
-    # lCI, uCI = np.exp(sms.DescrStatsW(log_hr_matrix.transpose()).tconfint_mean())
+    lCI, uCI = np.exp(sms.DescrStatsW(log_hr_matrix.transpose()).tconfint_mean())
     
     df_index_code['HR'] = mean_hr
     df_index_code['lCI'] = lCI
