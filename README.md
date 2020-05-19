@@ -7,6 +7,10 @@ As part of VIEW's drive toward machine learning in CVD risk prediction, the team
 The core dataset is the VARIANZ 2012 health contact population. Information from the National Health Collection are linked to provide demographic, hospitalised history, hospitalised outcomes, death-specific outcomes, and baseline treatment. To ensure consistency, the exclusion criteria have been applied in data management. 
 
 <h3>Data Management</h3>
+### Censoring
+End of followup was calculated by first capturing time to first CVD event or death during follow-up (n = 90945). The remaining population without an event (n= 2110750) were eligible for an adjusted end of followup date. This was done using all VARIANZ component: PHO, GSM, PHARMS, NMDS, NAP, and LAB - with each year's records evaluated for the latest contact during the followup period. In effect, a "last contact date" was established during followup. For 96,914 individuals, a last contact date could not be established and therefore, an end of followup could not be determined. These observations we left in the dataset for analysis or removal.
+
+### Exclusions
 <p>The initial raw VARIANZ dataset contained 4,582,807 individuals. Using the latest primary / secondary mapping provided in the NHI by MoH (August 2019), duplicate ENHIs were removed (where multiple secondary keys were mapped to a single primary key). The following steps were taken to remove cohort members deemed necessary to ensure quality. In total, 2,381,112 people were removed. An additional 96,914 were flagged for removal as they did not have a valid last contact date and could not be censored. The study consists of 5 years of follow-up with the end-of-study at 2017-12-31.</p>
 
 <table>
@@ -64,14 +68,16 @@ The core dataset is the VARIANZ 2012 health contact population. Information from
     </tr>
     <tr>
       <td class="numberingColumn" colspan="1">8</td>
-      <td colspan="1">Remove people without a valid NZDep score"</td>
+      <td colspan="1">Remove people without a valid NZDep score</td>
       <td colspan="1">-6984</td>
+    </tr>
+    <tr>
+      <td class="numberingColumn" colspan="1">9</td>
+      <td colspan="1"><span style="font-weight:bold">Total Remaining</span></td>
+      <td colspan="1"><span style="font-weight:bold">2201695</span></td>
     </tr>
   </tbody>
 </table>
-
-### Censoring
-End of followup was calculated by first capturing time to first CVD event or death during follow-up (n = 90945). The remaining population without an event (n= 2110750) were eligible for an adjusted end of followup date. This was done using all VARIANZ component: PHO, GSM, PHARMS, NMDS, NAP, and LAB - with each year's records evaluated for the latest contact during the followup period. In effect, a "last contact date" was established during followup. For 96,914 individuals, a last contact date could not be established and therefore, an end of followup could not be determined. These observations we left in the dataset for analysis or removal.
 
 ## Auxiliary Dataset
 A monthly index from 1-60 was created to mark each month prior to index time-point; as there are 60 months in the 5 years prior to 2012-12-31. The index value of 1 marks January 2008 and the index value of 60 marks December 2012. The aim is to obtain a sequence of between 1 and 60 that represents the monthly duration in which each feature is activated. Note: a feature is a distinct chemical or ICD code. Two auxillary datasets were provided to Sebastinano:
