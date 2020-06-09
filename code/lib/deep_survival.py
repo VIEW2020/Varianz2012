@@ -170,15 +170,15 @@ class NetAttention(nn.Module):
         super(NetAttention, self).__init__()
         self.embedding_dim = hp.embedding_dim
         # Embedding layers
-        self.embed_codes = nn.Embedding(num_embeddings = num_embeddings, embedding_dim = hp.embedding_dim, padding_idx = 0)
-        self.embed_diagt = nn.Embedding(num_embeddings = 5, embedding_dim = hp.embedding_dim, padding_idx = 0)
+        self.embed_codes = nn.Embedding(num_embeddings = num_embeddings, embedding_dim = hp.embedding_dim, padding_idx = 0, max_norm = 1)
+        self.embed_diagt = nn.Embedding(num_embeddings = 5, embedding_dim = hp.embedding_dim, padding_idx = 0, max_norm = 1)
         # Positional encoding
         pos_encodings = torch.zeros(hp.num_months_hx, hp.embedding_dim)
         position = torch.arange(0, hp.num_months_hx, dtype=torch.float).unsqueeze(1)
         div_term = torch.exp(torch.arange(0, hp.embedding_dim, 2).float() * (-math.log(10000.0) / hp.embedding_dim))
         pos_encodings[:, 0::2] = torch.sin(position * div_term)
         pos_encodings[:, 1::2] = torch.cos(position * div_term)
-        self.embed_month = nn.Embedding.from_pretrained(pos_encodings)
+        self.embed_month = nn.Embedding.from_pretrained(pos_encodings, max_norm = 1)
         # Attention
         self.attention = Attention(embedding_dim = hp.embedding_dim)
         # Fully connected layers
