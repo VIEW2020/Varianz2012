@@ -82,7 +82,7 @@ def main():
         # HRs
         emb_weight = net.embed_codes.weight # primary diagnostic codes
         emb_weight = emb_weight[1:,:]
-        fc_weight = net.fc2.weight[:,10:].t()
+        fc_weight = net.fc.weight[:,10:].t()
         log_hr = torch.matmul(emb_weight, fc_weight).detach().cpu().numpy().squeeze()
         
         # Save

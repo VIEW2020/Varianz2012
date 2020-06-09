@@ -165,13 +165,13 @@ def val(val_loader, x_val, code_val, month_val, diagt_val, model, criterion, epo
         return loss
 
 
-class NetAttention(nn.Module):
+class NetAttentionPosEmbedding(nn.Module):
     def __init__(self, n_input, num_embeddings, hp):
         super(NetAttention, self).__init__()
         self.embedding_dim = hp.embedding_dim
         # Embedding layers
         self.embed_codes = nn.Embedding(num_embeddings = num_embeddings, embedding_dim = hp.embedding_dim, padding_idx = 0, max_norm = 1, norm_type = 1.)
-        self.embed_diagt = nn.Embedding(num_embeddings = 5, embedding_dim = hp.embedding_dim, padding_idx = 0, max_norm = 1, norm_type = 1.)
+        self.embed_diagt = nn.Embedding(num_embeddings = 4, embedding_dim = hp.embedding_dim, padding_idx = 0, max_norm = 1, norm_type = 1.)
         # Positional encoding
         pos_encodings = torch.zeros(hp.num_months_hx, hp.embedding_dim)
         position = torch.arange(0, hp.num_months_hx, dtype=torch.float).unsqueeze(1)
@@ -199,6 +199,33 @@ class NetAttention(nn.Module):
         #x = x + self.elu(self.fc0(x)) # skip connections
         #x = x + self.elu(self.fc1(x))
         x = self.fc2(x)
+        
+        return x
+
+
+class NetAttention(nn.Module):
+    def __init__(self, n_input, num_embeddings, hp):
+        super(NetAttention, self).__init__()
+        self.embedding_dim = hp.embedding_dim
+        # Embedding layers
+        self.embed_codes = nn.Embedding(num_embeddings = num_embeddings,   embedding_dim = hp.embedding_dim, padding_idx = 0, max_norm = 1, norm_type = 1.)
+        self.embed_month = nn.Embedding(num_embeddings = hp.num_months_hx, embedding_dim = hp.embedding_dim, padding_idx = 0, max_norm = 1, norm_type = 1.)        
+        self.embed_diagt = nn.Embedding(num_embeddings = 4,                embedding_dim = hp.embedding_dim, padding_idx = 0, max_norm = 1, norm_type = 1.)
+        # Attention
+        self.attention = Attention(embedding_dim = hp.embedding_dim)
+        # Fully connected layers
+        self.fc_size = n_input + hp.embedding_dim
+        self.fc = nn.Linear(self.fc_size, 1, bias=False)
+
+    def forward(self, x, code, month, diagt, time=None):
+        if time is not None:
+            x = torch.cat([x, time], 1)
+        embedded_codes = self.embed_codes(code.long())
+        embedded_month = self.embed_month(month.long())
+        embedded_diagt = self.embed_diagt(diagt.long())
+        summary, _ = self.attention(embedded_codes + embedded_month + embedded_diagt, code)
+        x = torch.cat((x, summary), dim=-1)
+        x = self.fc(x)
         
         return x
     

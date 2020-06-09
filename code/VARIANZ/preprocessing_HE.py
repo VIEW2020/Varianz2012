@@ -32,7 +32,7 @@ def main():
     
     print('Replace DIAG_TYP with numerical values...')
     df.rename(columns={'DIAG_TYP': 'DIAG_TYPE'}, inplace=True)
-    df['DIAG_TYPE'] = df['DIAG_TYPE'].replace({'A': 1, 'B': 2, 'E': 3, 'O': 4})
+    df['DIAG_TYPE'] = df['DIAG_TYPE'].replace({'A': 0, 'B': 1, 'E': 2, 'O': 3})
 
     print('Codes that actually exist as primary...')
     primary_codes = df.loc[df['DIAG_TYPE'] == 1, 'CLIN_CD_10'].drop_duplicates().reset_index()
