@@ -12,20 +12,17 @@ from pdb import set_trace as bp
 
 
 def main():
-    df = pd.DataFrame()
-    
-    for year in range(2008, 2013):
-        # Load data
-        print('Year: {}'.format(year))
-        df_year = feather.read_dataframe(hp.data_dir + 'HX_ADM_v2_' + str(year) + '.feather')
-        df_year.rename(columns={'eventmonth_index': 'dispmonth_index'}, inplace=True)
-        df_year['dispmonth_index'] = df_year['dispmonth_index'].astype(int)
-        df = df.append(df_year)
+    df = feather.read_dataframe(hp.data_dir + 'HX_ADM_2008_2012_v3-1.feather')
+    df.rename(columns={'eventmonth_index': 'dispmonth_index'}, inplace=True)
+    df['dispmonth_index'] = df['dispmonth_index'].astype(int)
 
     df.drop_duplicates(inplace=True)
 
     print('Remove future data...')
     df = df[df['dispmonth_index'] < 60]
+    
+    print('Invert time...')
+    df['dispmonth_index'] = 59 - df['dispmonth_index']
 
     print('Remove codes associated with less than min_count persons...')
     df = df[df.groupby('CLIN_CD_10')['VSIMPLE_INDEX_MASTER'].transform('nunique') >= hp.min_count]
@@ -35,7 +32,7 @@ def main():
     df['DIAG_TYPE'] = df['DIAG_TYPE'].replace({'A': 0, 'B': 1, 'E': 2, 'O': 3})
 
     print('Codes that actually exist as primary...')
-    primary_codes = df.loc[df['DIAG_TYPE'] == 1, 'CLIN_CD_10'].drop_duplicates().reset_index()
+    primary_codes = df.loc[df['DIAG_TYPE'] == 0, 'CLIN_CD_10'].drop_duplicates().reset_index()
     primary_codes.to_feather(hp.data_pp_dir + 'primary_codes.feather')
 
     print('Save...')

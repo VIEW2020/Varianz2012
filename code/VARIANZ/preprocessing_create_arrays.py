@@ -67,7 +67,7 @@ def main():
     np.random.seed(hp.np_seed)
 
     print('Loading VARIANZ data...')
-    df = feather.read_dataframe(hp.data_pp_dir + 'Py_VARIANZ_2012_v1_pp.feather')
+    df = feather.read_dataframe(hp.data_pp_dir + 'Py_VARIANZ_2012_v3-1_pp.feather')
 
     print('Loading medications...')
     ph = feather.read_dataframe(hp.data_pp_dir + 'PH_pp.feather')
@@ -91,7 +91,6 @@ def main():
     df = pd.get_dummies(df, prefix='en_prtsd_eth', columns=['en_prtsd_eth'], drop_first=True)
     
     print('-----------------------------------------')
-
     print('Concatenating codes...')
     ac = pd.concat([ph, he], ignore_index=True, sort=False)
     ac['DIAG_TYPE'] = ac['DIAG_TYPE'].fillna(0).astype(int)
@@ -113,10 +112,10 @@ def main():
     diagt = np.zeros((len(df_index_person), max_count), dtype=np.uint8)
 
     print('Merging index_person...')
-    ac = ac.merge(df_index_person, how='left', on='VSIMPLE_INDEX_MASTER')
+    ac = ac.merge(df_index_person, how='inner', on='VSIMPLE_INDEX_MASTER')
     print('Merging index_code...')
     ac['CODE'] = ac['CODE'].astype(str)
-    ac = ac.merge(df_index_code,   how='left', on=['CODE', 'TYPE'])
+    ac = ac.merge(df_index_code,   how='inner', on=['CODE', 'TYPE'])
     print('Updating arrays...')
     codes[ac['INDEX_PERSON'].values, ac['COUNT'].values] = ac['INDEX_CODE'].values
     month[ac['INDEX_PERSON'].values, ac['COUNT'].values] = ac['MONTH'].values

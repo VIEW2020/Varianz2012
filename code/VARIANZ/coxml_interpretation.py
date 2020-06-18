@@ -32,6 +32,7 @@ from hyperparameters import Hyperparameters as hp
 from os import listdir
 
 import statsmodels.stats.api as sms
+# import matplotlib.pyplot as plt
 
 from pdb import set_trace as bp
 
@@ -88,6 +89,7 @@ def main():
         # Save
         log_hr_matrix[:, i] = log_hr
     
+    # Compute HRs
     mean_hr = np.exp(log_hr_matrix.mean(axis=1))
     lCI, uCI = np.exp(sms.DescrStatsW(log_hr_matrix.transpose()).tconfint_mean())
     
@@ -95,7 +97,12 @@ def main():
     df_index_code['lCI'] = lCI
     df_index_code['uCI'] = uCI
     
+    # Keep only codes existing as primary
+    primary_codes = feather.read_dataframe(hp.data_pp_dir + 'primary_codes.feather')
+    df_index_code = df_index_code[(df_index_code['TYPE'] == 0) | df_index_code['CODE'].isin(primary_codes['CLIN_CD_10'])]
+    
     # Save
+    df_index_code.sort_values(by=['TYPE', 'HR'], ascending=False, inplace=True)
     df_index_code.to_csv(hp.data_dir + 'hr.csv', index=False)    
 
 if __name__ == '__main__':

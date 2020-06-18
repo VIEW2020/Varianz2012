@@ -63,10 +63,6 @@ def main():
 
     df_index_code = feather.read_dataframe(hp.data_pp_dir + 'df_index_code.feather')
 
-    rel_idx = [0,1,2,9,10,11,12,13,14,15] # exclude history covariates to avoid collinearity with individual codes
-    x_trn = x_trn[:, rel_idx]
-    x_tst = x_tst[:, rel_idx]
-
     ####################################################################################################### 
 
     # Neural Net

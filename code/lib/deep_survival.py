@@ -11,8 +11,8 @@ import torch
 import torch.utils.data as utils
 import torch.nn.functional as F
 import torch.nn as nn
-from torch_scatter import scatter_add
-from torch_scatter.composite import scatter_softmax
+#from torch_scatter import scatter_add
+#from torch_scatter.composite import scatter_softmax
 from tqdm import tqdm
 
 from pdb import set_trace as bp
@@ -165,20 +165,20 @@ def val(val_loader, x_val, code_val, month_val, diagt_val, model, criterion, epo
         return loss
 
 
-class NetAttentionPosEmbedding(nn.Module):
+class NetAttentionTrigMonthEmbedding(nn.Module):
     def __init__(self, n_input, num_embeddings, hp):
         super(NetAttention, self).__init__()
         self.embedding_dim = hp.embedding_dim
         # Embedding layers
-        self.embed_codes = nn.Embedding(num_embeddings = num_embeddings, embedding_dim = hp.embedding_dim, padding_idx = 0, max_norm = 1, norm_type = 1.)
-        self.embed_diagt = nn.Embedding(num_embeddings = 4, embedding_dim = hp.embedding_dim, padding_idx = 0, max_norm = 1, norm_type = 1.)
+        self.embed_codes = nn.Embedding(num_embeddings = num_embeddings, embedding_dim = hp.embedding_dim, padding_idx = 0, max_norm = 1, norm_type = 2.)
+        self.embed_diagt = nn.Embedding(num_embeddings = 4, embedding_dim = hp.embedding_dim, padding_idx = 0, max_norm = 1, norm_type = 2.)
         # Positional encoding
         pos_encodings = torch.zeros(hp.num_months_hx, hp.embedding_dim)
         position = torch.arange(0, hp.num_months_hx, dtype=torch.float).unsqueeze(1)
         div_term = torch.exp(torch.arange(0, hp.embedding_dim, 2).float() * (-math.log(10000.0) / hp.embedding_dim))
         pos_encodings[:, 0::2] = torch.sin(position * div_term)
         pos_encodings[:, 1::2] = torch.cos(position * div_term)
-        self.embed_month = nn.Embedding.from_pretrained(pos_encodings, padding_idx = 0, max_norm = 1, norm_type = 1.)
+        self.embed_month = nn.Embedding.from_pretrained(pos_encodings, padding_idx = 0, max_norm = 1, norm_type = 2.)
         # Attention
         self.attention = Attention(embedding_dim = hp.embedding_dim)
         # Fully connected layers
@@ -186,7 +186,7 @@ class NetAttentionPosEmbedding(nn.Module):
         self.fc_size = n_input + hp.embedding_dim
         #self.fc0 = nn.Linear(self.fc_size, self.fc_size)
         #self.fc1 = nn.Linear(self.fc_size, self.fc_size)
-        self.fc2 = nn.Linear(self.fc_size, 1, bias=False)
+        self.fc = nn.Linear(self.fc_size, 1, bias=False)
 
     def forward(self, x, code, month, diagt, time=None):
         if time is not None:
@@ -198,19 +198,18 @@ class NetAttentionPosEmbedding(nn.Module):
         x = torch.cat((x, summary), dim=-1)
         #x = x + self.elu(self.fc0(x)) # skip connections
         #x = x + self.elu(self.fc1(x))
-        x = self.fc2(x)
-        
+        x = self.fc(x)        
         return x
 
 
-class NetAttention(nn.Module):
+class NetAttentionMonthEmbedding(nn.Module):
     def __init__(self, n_input, num_embeddings, hp):
         super(NetAttention, self).__init__()
         self.embedding_dim = hp.embedding_dim
         # Embedding layers
-        self.embed_codes = nn.Embedding(num_embeddings = num_embeddings,   embedding_dim = hp.embedding_dim, padding_idx = 0, max_norm = 1, norm_type = 1.)
-        self.embed_month = nn.Embedding(num_embeddings = hp.num_months_hx, embedding_dim = hp.embedding_dim, padding_idx = 0, max_norm = 1, norm_type = 1.)        
-        self.embed_diagt = nn.Embedding(num_embeddings = 4,                embedding_dim = hp.embedding_dim, padding_idx = 0, max_norm = 1, norm_type = 1.)
+        self.embed_codes = nn.Embedding(num_embeddings = num_embeddings,   embedding_dim = hp.embedding_dim, padding_idx = 0, max_norm = 1, norm_type = 2.)
+        self.embed_month = nn.Embedding(num_embeddings = hp.num_months_hx, embedding_dim = hp.embedding_dim, padding_idx = 0, max_norm = 1, norm_type = 2.)        
+        self.embed_diagt = nn.Embedding(num_embeddings = 4,                embedding_dim = hp.embedding_dim, padding_idx = 0, max_norm = 1, norm_type = 2.)
         # Attention
         self.attention = Attention(embedding_dim = hp.embedding_dim)
         # Fully connected layers
@@ -225,9 +224,65 @@ class NetAttention(nn.Module):
         embedded_diagt = self.embed_diagt(diagt.long())
         summary, _ = self.attention(embedded_codes + embedded_month + embedded_diagt, code)
         x = torch.cat((x, summary), dim=-1)
-        x = self.fc(x)
-        
+        x = self.fc(x)        
         return x
+
+
+class NetAttentionDecayByCode(nn.Module):
+    def __init__(self, n_input, num_embeddings, hp):
+        super(NetAttention, self).__init__()
+        self.embedding_dim = hp.embedding_dim
+        # Embedding layers
+        self.embed_codes = nn.Embedding(num_embeddings = num_embeddings, embedding_dim = hp.embedding_dim, padding_idx = 0, max_norm = 1, norm_type = 2.)
+        self.embed_diagt = nn.Embedding(num_embeddings = 4,              embedding_dim = hp.embedding_dim, padding_idx = 0, max_norm = 1, norm_type = 2.)
+        self.embed_decay = nn.Embedding(num_embeddings = num_embeddings, embedding_dim = 1,                padding_idx = 0)
+        # Attention
+        self.attention = Attention(embedding_dim = hp.embedding_dim)
+        # Fully connected layers
+        self.fc_size = n_input + hp.embedding_dim
+        self.fc = nn.Linear(self.fc_size, 1, bias=False)
+
+    def forward(self, x, code, month, diagt, time=None):
+        if time is not None:
+            x = torch.cat([x, time], 1)
+        embedded_codes = self.embed_codes(code.long())
+        embedded_diagt = self.embed_diagt(diagt.long())
+        embedded_decay = torch.abs(self.embed_decay(code.long())) #needs to be positive
+        month = torch.unsqueeze(month, -1)
+        decayed_codes = (embedded_codes + embedded_diagt)*torch.exp(-embedded_decay*month)
+        summary, _ = self.attention(decayed_codes, code)
+        x = torch.cat((x, summary), dim=-1)
+        x = self.fc(x)        
+        return x
+        
+        
+class NetAttention(nn.Module):
+    def __init__(self, n_input, num_embeddings, hp):
+        super(NetAttention, self).__init__()
+        self.embedding_dim = hp.embedding_dim
+        # Embedding layers
+        self.embed_codes = nn.Embedding(num_embeddings = num_embeddings, embedding_dim = hp.embedding_dim, padding_idx = 0, max_norm = 1, norm_type = 1.)
+        self.embed_diagt = nn.Embedding(num_embeddings = 4,              embedding_dim = hp.embedding_dim, padding_idx = 0, max_norm = 1, norm_type = 1.)
+        # Exponential time decay coefficient
+        self.decay = nn.Parameter(torch.zeros(1))
+        # Attention
+        self.attention = Attention(embedding_dim = hp.embedding_dim)
+        # Fully connected layers
+        self.fc_size = n_input + hp.embedding_dim
+        self.fc = nn.Linear(self.fc_size, 1, bias=False)
+
+    def forward(self, x, code, month, diagt, time=None):
+        if time is not None:
+            x = torch.cat([x, time], 1)
+        embedded_codes = self.embed_codes(code.long())
+        embedded_diagt = self.embed_diagt(diagt.long())
+        decay = torch.abs(self.decay) #needs to be positive
+        month = torch.unsqueeze(month, -1)
+        decayed_codes = (embedded_codes + embedded_diagt)*torch.exp(-decay*month)
+        summary, _ = self.attention(decayed_codes, code)
+        x = torch.cat((x, summary), dim=-1)
+        x = self.fc(x)        
+        return x        
     
 
 def log(model_name, concordance, brier, nbll, hp):

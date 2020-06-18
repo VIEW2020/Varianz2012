@@ -38,7 +38,7 @@ def main():
     # x_trn = x_trn[:, rel_idx]
     # x_tst = x_tst[:, rel_idx]
 
-    relevant_code = 3419
+    relevant_code = 2755
     relevant_code_present = (codes_trn == relevant_code).max(axis=1)
     print('N codes: {}'.format(sum(relevant_code_present)))
     
@@ -72,9 +72,9 @@ def main():
     nbll = ev.integrated_nbll(time_grid)
     print('NBLL: {:.6f}'.format(nbll))
 
-    # Concordance: 0.783685
-    # Brier score: 0.017342
-    # NBLL: 0.076727
+    # Concordance: 0.770607
+    # Brier score: 0.017257
+    # NBLL: 0.077004
 
 
 
