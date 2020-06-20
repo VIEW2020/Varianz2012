@@ -256,7 +256,7 @@ class NetAttentionDecayByCode(nn.Module):
         return x
         
         
-class NetAttention(nn.Module):
+class NetAttentionWithDiagt(nn.Module):
     def __init__(self, n_input, num_embeddings, hp):
         super(NetAttention, self).__init__()
         self.embedding_dim = hp.embedding_dim
@@ -283,6 +283,34 @@ class NetAttention(nn.Module):
         x = torch.cat((x, summary), dim=-1)
         x = self.fc(x)        
         return x        
+
+
+class NetAttention(nn.Module):
+    def __init__(self, n_input, num_embeddings, hp):
+        super(NetAttention, self).__init__()
+        self.embedding_dim = hp.embedding_dim
+        # Embedding layers
+        self.embed_codes = nn.Embedding(num_embeddings = num_embeddings, embedding_dim = hp.embedding_dim, padding_idx = 0, max_norm = 1, norm_type = 2.)
+        # Exponential time decay coefficient
+        self.decay = nn.Parameter(torch.zeros(1))
+        # Attention
+        self.attention = Attention(embedding_dim = hp.embedding_dim)
+        # Fully connected layers
+        self.fc_size = n_input + hp.embedding_dim
+        self.fc = nn.Linear(self.fc_size, 1, bias=False)
+
+    def forward(self, x, code, month, diagt, time=None):
+        if time is not None:
+            x = torch.cat([x, time], 1)
+        embedded_codes = self.embed_codes(code.long())
+        decay = torch.abs(self.decay) #needs to be positive
+        month = torch.unsqueeze(month, -1)
+        decayed_codes = embedded_codes*torch.exp(-decay*month)
+        summary, _ = self.attention(decayed_codes, code)
+        x = torch.cat((x, summary), dim=-1)
+        x = self.fc(x)        
+        return x        
+
     
 
 def log(model_name, concordance, brier, nbll, hp):

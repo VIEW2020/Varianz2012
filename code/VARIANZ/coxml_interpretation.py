@@ -32,7 +32,7 @@ from hyperparameters import Hyperparameters as hp
 from os import listdir
 
 import statsmodels.stats.api as sms
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 from pdb import set_trace as bp
 
@@ -69,6 +69,7 @@ def main():
     # Trained models
     models = listdir(hp.log_dir)
     log_hr_matrix = np.zeros((df_index_code.shape[0], len(models)))
+    # log_hr_dt_mat = np.zeros((4, len(models)))
 
     # Neural Net
     n_inputs = 10
@@ -85,9 +86,12 @@ def main():
         emb_weight = emb_weight[1:,:]
         fc_weight = net.fc.weight[:,10:].t()
         log_hr = torch.matmul(emb_weight, fc_weight).detach().cpu().numpy().squeeze()
+        # log_hr = torch.matmul(emb_weight + net.embed_diagt.weight[1,:], fc_weight).detach().cpu().numpy().squeeze()
+        # log_hr_diagt = torch.matmul(net.embed_diagt.weight, fc_weight).detach().cpu().numpy().squeeze()
         
         # Save
         log_hr_matrix[:, i] = log_hr
+        # log_hr_dt_mat[:, i] = log_hr_diagt
     
     # Compute HRs
     mean_hr = np.exp(log_hr_matrix.mean(axis=1))
@@ -102,8 +106,13 @@ def main():
     df_index_code = df_index_code[(df_index_code['TYPE'] == 0) | df_index_code['CODE'].isin(primary_codes['CLIN_CD_10'])]
     
     # Save
-    df_index_code.sort_values(by=['TYPE', 'HR'], ascending=False, inplace=True)
+    df_index_code.sort_values(by=['TYPE', 'lCI'], ascending=False, inplace=True)
     df_index_code.to_csv(hp.data_dir + 'hr.csv', index=False)    
+    
+    # Plot
+    # hr_diagt = np.exp(log_hr_dt_mat)
+    # plt.boxplot(hr_diagt.transpose())
+    # plt.show()
 
 if __name__ == '__main__':
     main()
