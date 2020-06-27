@@ -20,7 +20,8 @@ class Hyperparameters:
     torch_seed = 42
 	
     # Model
-    min_count = 300 # codes whose occurrence is less than min_count are encoded as OTHER
+    min_count = 200 # codes whose occurrence is less than min_count are encoded as OTHER
+    gender = 'females'
     
     # Training
     if torch.cuda.is_available():

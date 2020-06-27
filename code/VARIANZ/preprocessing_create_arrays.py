@@ -66,124 +66,130 @@ def sort_and_case_indices(x, time, event):
 def main():
     np.random.seed(hp.np_seed)
 
-    print('Loading VARIANZ data...')
-    df = feather.read_dataframe(hp.data_pp_dir + 'Py_VARIANZ_2012_v3-1_pp.feather')
+    for gender in ['males', 'females']:
+        print('Processing ' + gender + '...')
 
-    print('Loading medications...')
-    ph = feather.read_dataframe(hp.data_pp_dir + 'PH_pp.feather')
-    ph.rename(columns={'chem_id': 'CODE', 'dispmonth_index': 'MONTH'}, inplace=True)
-    ph['TYPE'] = 0
+        print('Loading VARIANZ data...')
+        df = feather.read_dataframe(hp.data_pp_dir + 'Py_VARIANZ_2012_v3-1_pp_' + gender + '.feather')
 
-    print('Loading hospital events...')
-    he = feather.read_dataframe(hp.data_pp_dir + 'HE_pp.feather')
-    he.rename(columns={'CLIN_CD_10': 'CODE', 'dispmonth_index': 'MONTH'}, inplace=True)
-    he['TYPE'] = 1
-    
-    print('-----------------------------------------')
+        print('Loading medications...')
+        ph = feather.read_dataframe(hp.data_pp_dir + 'PH_pp_' + gender + '.feather')
+        ph.rename(columns={'chem_id': 'CODE', 'dispmonth_index': 'MONTH'}, inplace=True)
+        ph['TYPE'] = 0
 
-    # numerical index for each person
-    df.reset_index(drop=True, inplace=True)
-    df_index_person = df['VSIMPLE_INDEX_MASTER'].reset_index().rename(columns={'index': 'INDEX_PERSON'})
-
-    # static variables
-    print('Create dummy variables...')
-    # Convert cathegorical ethnicity into indicator variables
-    df = pd.get_dummies(df, prefix='en_prtsd_eth', columns=['en_prtsd_eth'], drop_first=True)
-    
-    print('-----------------------------------------')
-    print('Concatenating codes...')
-    ac = pd.concat([ph, he], ignore_index=True, sort=False)
-    ac['DIAG_TYPE'] = ac['DIAG_TYPE'].fillna(0).astype(int)
-
-    # medications and hospital events
-    print('Get max number of codes per person...')
-    ac['COUNT'] = ac.groupby(['VSIMPLE_INDEX_MASTER']).cumcount()
-    max_count = ac['COUNT'].max()+1
-    print('max_count {}'.format(max_count))
-
-    # code index (add 1 to reserve 0 for padding)
-    df_index_code = ac[['CODE', 'TYPE']].drop_duplicates().reset_index(drop=True)
-    df_index_code['CODE'] = df_index_code['CODE'].astype(str)
-    df_index_code['INDEX_CODE'] = df_index_code.index + 1
+        print('Loading hospital events...')
+        he = feather.read_dataframe(hp.data_pp_dir + 'HE_pp_' + gender + '.feather')
+        he.rename(columns={'CLIN_CD_10': 'CODE', 'dispmonth_index': 'MONTH'}, inplace=True)
+        he['TYPE'] = 1
         
-    # codes, times, diag_type arrays
-    codes = np.zeros((len(df_index_person), max_count), dtype=np.int16) # uint16 not supported by torch
-    month = np.zeros((len(df_index_person), max_count), dtype=np.uint8)
-    diagt = np.zeros((len(df_index_person), max_count), dtype=np.uint8)
+        print('-----------------------------------------')
 
-    print('Merging index_person...')
-    ac = ac.merge(df_index_person, how='inner', on='VSIMPLE_INDEX_MASTER')
-    print('Merging index_code...')
-    ac['CODE'] = ac['CODE'].astype(str)
-    ac = ac.merge(df_index_code,   how='inner', on=['CODE', 'TYPE'])
-    print('Updating arrays...')
-    codes[ac['INDEX_PERSON'].values, ac['COUNT'].values] = ac['INDEX_CODE'].values
-    month[ac['INDEX_PERSON'].values, ac['COUNT'].values] = ac['MONTH'].values
-    diagt[ac['INDEX_PERSON'].values, ac['COUNT'].values] = ac['DIAG_TYPE'].values
-    print('-----------------------------------------')
+        # numerical index for each person
+        df.reset_index(drop=True, inplace=True)
+        df_index_person = df['VSIMPLE_INDEX_MASTER'].reset_index().rename(columns={'index': 'INDEX_PERSON'})
 
-    # split data
-    print('Split data into train/validate/test...')
-    df_trn, df_tst = train_test_split(df, test_size=0.1, train_size=0.8, shuffle=True, stratify=df['EVENT'])
-    df_val = df.drop(df_trn.index).drop(df_tst.index)
-    
-    codes_trn, codes_val, codes_tst = codes[df_trn.index], codes[df_val.index], codes[df_tst.index]
-    month_trn, month_val, month_tst = month[df_trn.index], month[df_val.index], month[df_tst.index]
-    diagt_trn, diagt_val, diagt_tst = diagt[df_trn.index], diagt[df_val.index], diagt[df_tst.index]
+        # static variables
+        print('Create dummy variables...')
+        # Convert cathegorical ethnicity into indicator variables
+        df = pd.get_dummies(df, prefix='en_prtsd_eth', columns=['en_prtsd_eth'], drop_first=True)
+        
+        print('-----------------------------------------')
+        print('Concatenating codes...')
+        ac = pd.concat([ph, he], ignore_index=True, sort=False)
+        ac['DIAG_TYPE'] = ac['DIAG_TYPE'].fillna(0).astype(int)
 
-    # Feature Transforms
-    print('Scale continuous features...')
-    cols_standardize = ['nhi_age']
-    trans_list = []
-    for col in df.columns.values.tolist():
-        if col != 'TIME' and col !='EVENT' and col !='VSIMPLE_INDEX_MASTER':
-            if col in cols_standardize:
-                trans_list.append(([col], StandardScaler()))
-            else:
-                trans_list.append((col, None))
-    x_mapper = DataFrameMapper(trans_list)
-    
-    x_trn = x_mapper.fit_transform(df_trn).astype('float32')
-    x_val = x_mapper.transform(df_val).astype('float32')
-    x_tst = x_mapper.transform(df_tst).astype('float32')
+        # medications and hospital events
+        print('Get max number of codes per person...')
+        ac['COUNT'] = ac.groupby(['VSIMPLE_INDEX_MASTER']).cumcount()
+        max_count = ac['COUNT'].max()+1
+        print('max_count {}'.format(max_count))
 
-    # Get target
-    print('Get time and events...')
-    get_target = lambda df: (df['TIME'].values, df['EVENT'].values)
-    labtrans = CoxTime.label_transform()
-    # Scale time for nonproportional hazards
-    time_trn_nonprop, _ = labtrans.fit_transform(*get_target(df_trn)) # ignore event_trn_nonprop
-    time_val_nonprop, _ = labtrans.transform(*get_target(df_val)) # ignore event_val_nonprop
-    # For proportional hazards
-    time_trn, event_trn = get_target(df_trn)
-    time_val, event_val = get_target(df_val)
-    time_tst, event_tst = get_target(df_tst)
+        # code index (add 1 to reserve 0 for padding)
+        df_index_code = ac[['CODE', 'TYPE']].drop_duplicates().reset_index(drop=True)
+        df_index_code['CODE'] = df_index_code['CODE'].astype(str)
+        df_index_code['INDEX_CODE'] = df_index_code.index + 1
+            
+        # codes, times, diag_type arrays
+        codes = np.zeros((len(df_index_person), max_count), dtype=np.int16) # uint16 not supported by torch
+        month = np.zeros((len(df_index_person), max_count), dtype=np.uint8)
+        diagt = np.zeros((len(df_index_person), max_count), dtype=np.uint8)
 
-    # Create datasets
-    sort_idx_trn, case_idx_trn, max_idx_control_trn = sort_and_case_indices(x_trn, time_trn, event_trn)
-    x_trn, time_trn, event_trn = x_trn[sort_idx_trn], time_trn[sort_idx_trn], event_trn[sort_idx_trn]
-    codes_trn, month_trn, diagt_trn = codes_trn[sort_idx_trn], month_trn[sort_idx_trn], diagt_trn[sort_idx_trn]
-    time_trn_nonprop = time_trn_nonprop[sort_idx_trn]
-    
-    sort_idx_val, case_idx_val, max_idx_control_val = sort_and_case_indices(x_val, time_val, event_val)
-    x_val, time_val, event_val = x_val[sort_idx_val], time_val[sort_idx_val], event_val[sort_idx_val]
-    codes_val, month_val, diagt_val = codes_val[sort_idx_val], month_val[sort_idx_val], diagt_val[sort_idx_val]
-    time_val_nonprop = time_val_nonprop[sort_idx_val]
-    
-    print('-----------------------------------------')
-    print('Save...')
-    np.savez(hp.data_pp_dir + 'data_arrays.npz', x_trn=x_trn, time_trn=time_trn, event_trn=event_trn,
-        codes_trn=codes_trn, month_trn=month_trn, diagt_trn=diagt_trn,
-        case_idx_trn=case_idx_trn, max_idx_control_trn=max_idx_control_trn,
-        x_val=x_val, time_val=time_val, event_val=event_val,
-        codes_val=codes_val, month_val=month_val, diagt_val=diagt_val,
-        case_idx_val=case_idx_val, max_idx_control_val=max_idx_control_val,
-        x_tst=x_tst, time_tst=time_tst, event_tst=event_tst, codes_tst=codes_tst, month_tst=month_tst, diagt_tst=diagt_tst,)
-    np.savez(hp.data_pp_dir + 'data_arrays_nonprop_hazards.npz', time_trn_nonprop=time_trn_nonprop, time_val_nonprop=time_val_nonprop)
-    with open(hp.data_pp_dir + 'labtrans.pkl', 'wb') as f:
-        pkl.dump(labtrans, f)
-    df_index_code.to_feather(hp.data_pp_dir + 'df_index_code.feather')
+        print('Merging index_person...')
+        ac = ac.merge(df_index_person, how='inner', on='VSIMPLE_INDEX_MASTER')
+        print('Merging index_code...')
+        ac['CODE'] = ac['CODE'].astype(str)
+        ac = ac.merge(df_index_code,   how='inner', on=['CODE', 'TYPE'])
+        print('Updating arrays...')
+        codes[ac['INDEX_PERSON'].values, ac['COUNT'].values] = ac['INDEX_CODE'].values
+        month[ac['INDEX_PERSON'].values, ac['COUNT'].values] = ac['MONTH'].values
+        diagt[ac['INDEX_PERSON'].values, ac['COUNT'].values] = ac['DIAG_TYPE'].values
+        print('-----------------------------------------')
 
+        # split data
+        print('Split data into train/validate/test...')
+        df_trn, df_tst = train_test_split(df, test_size=0.1, train_size=0.8, shuffle=True, stratify=df['EVENT'])
+        df_val = df.drop(df_trn.index).drop(df_tst.index)
+        
+        codes_trn, codes_val, codes_tst = codes[df_trn.index], codes[df_val.index], codes[df_tst.index]
+        month_trn, month_val, month_tst = month[df_trn.index], month[df_val.index], month[df_tst.index]
+        diagt_trn, diagt_val, diagt_tst = diagt[df_trn.index], diagt[df_val.index], diagt[df_tst.index]
+
+        # Feature Transforms
+        print('Scale continuous features...')
+        cols_standardize = [] # not standardizing 'nhi_age' to facilitate comparison with VARIANZ equations
+        trans_list = []
+        cols_list = []
+        for col in df.columns.values.tolist():
+            if col != 'TIME' and col !='EVENT' and col !='VSIMPLE_INDEX_MASTER' and col !='gender_code':
+                cols_list.append(col)
+                if col in cols_standardize:
+                    trans_list.append(([col], StandardScaler()))
+                else:
+                    trans_list.append((col, None))
+        x_mapper = DataFrameMapper(trans_list)
+        
+        x_trn = x_mapper.fit_transform(df_trn).astype('float32')
+        x_val = x_mapper.transform(df_val).astype('float32')
+        x_tst = x_mapper.transform(df_tst).astype('float32')
+
+        # Get target
+        print('Get time and events...')
+        get_target = lambda df: (df['TIME'].values, df['EVENT'].values)
+        labtrans = CoxTime.label_transform()
+        # Scale time for nonproportional hazards
+        time_trn_nonprop, _ = labtrans.fit_transform(*get_target(df_trn)) # ignore event_trn_nonprop
+        time_val_nonprop, _ = labtrans.transform(*get_target(df_val)) # ignore event_val_nonprop
+        # For proportional hazards
+        time_trn, event_trn = get_target(df_trn)
+        time_val, event_val = get_target(df_val)
+        time_tst, event_tst = get_target(df_tst)
+
+        # Create datasets
+        sort_idx_trn, case_idx_trn, max_idx_control_trn = sort_and_case_indices(x_trn, time_trn, event_trn)
+        x_trn, time_trn, event_trn = x_trn[sort_idx_trn], time_trn[sort_idx_trn], event_trn[sort_idx_trn]
+        codes_trn, month_trn, diagt_trn = codes_trn[sort_idx_trn], month_trn[sort_idx_trn], diagt_trn[sort_idx_trn]
+        time_trn_nonprop = time_trn_nonprop[sort_idx_trn]
+        
+        sort_idx_val, case_idx_val, max_idx_control_val = sort_and_case_indices(x_val, time_val, event_val)
+        x_val, time_val, event_val = x_val[sort_idx_val], time_val[sort_idx_val], event_val[sort_idx_val]
+        codes_val, month_val, diagt_val = codes_val[sort_idx_val], month_val[sort_idx_val], diagt_val[sort_idx_val]
+        time_val_nonprop = time_val_nonprop[sort_idx_val]
+        
+        print('-----------------------------------------')
+        print('Save...')
+        np.savez(hp.data_pp_dir + 'data_arrays_' + gender + '.npz', x_trn=x_trn, time_trn=time_trn, event_trn=event_trn,
+            codes_trn=codes_trn, month_trn=month_trn, diagt_trn=diagt_trn,
+            case_idx_trn=case_idx_trn, max_idx_control_trn=max_idx_control_trn,
+            x_val=x_val, time_val=time_val, event_val=event_val,
+            codes_val=codes_val, month_val=month_val, diagt_val=diagt_val,
+            case_idx_val=case_idx_val, max_idx_control_val=max_idx_control_val,
+            x_tst=x_tst, time_tst=time_tst, event_tst=event_tst, codes_tst=codes_tst, month_tst=month_tst, diagt_tst=diagt_tst,)
+        np.savez(hp.data_pp_dir + 'data_arrays_nonprop_hazards_' + gender + '.npz', time_trn_nonprop=time_trn_nonprop, time_val_nonprop=time_val_nonprop)
+        with open(hp.data_pp_dir + 'labtrans_' + gender + '.pkl', 'wb') as f:
+            pkl.dump(labtrans, f)
+        df_index_code.to_feather(hp.data_pp_dir + 'df_index_code_' + gender + '.feather')
+        with open(hp.data_pp_dir + 'cols_list.pkl', 'wb') as f:
+            pkl.dump(cols_list, f)
 
 if __name__ == '__main__':
     main()

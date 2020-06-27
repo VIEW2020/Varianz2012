@@ -40,7 +40,7 @@ from pdb import set_trace as bp
 def main():
     # Load data
     print('Load data...')
-    df_index_code = feather.read_dataframe(hp.data_pp_dir + 'df_index_code.feather')
+    df_index_code = feather.read_dataframe(hp.data_pp_dir + 'df_index_code_' + hp.gender + '.feather')
     pharm_lookup = feather.read_dataframe(hp.data_dir + 'CURRENT_VIEW_PHARMS_LOOKUP.feather')
     icd10_lookup = feather.read_dataframe(hp.data_dir + 'CURRENT_ICD10_ALL_LOOKUP.feather')
 
@@ -67,31 +67,27 @@ def main():
     print('Compute HRs...')
     
     # Trained models
-    models = listdir(hp.log_dir)
+    models = listdir(hp.data_dir + 'log_' + hp.gender + '/')
     log_hr_matrix = np.zeros((df_index_code.shape[0], len(models)))
-    # log_hr_dt_mat = np.zeros((4, len(models)))
 
     # Neural Net
-    n_inputs = 10
+    n_inputs = 18
     net = NetAttention(n_inputs, df_index_code.shape[0]+1, hp) #+1 for zero padding
 
     for i in range(len(models)):
         print('HRs for model {}'.format(i))
         
         # Restore variables from disk
-        net.load_state_dict(torch.load(hp.log_dir + models[i], map_location=hp.device))
+        net.load_state_dict(torch.load(hp.data_dir + 'log_' + hp.gender + '/' + models[i], map_location=hp.device))
         
         # HRs
         emb_weight = net.embed_codes.weight # primary diagnostic codes
         emb_weight = emb_weight[1:,:]
-        fc_weight = net.fc.weight[:,10:].t()
+        fc_weight = net.fc.weight[:,18:].t()
         log_hr = torch.matmul(emb_weight, fc_weight).detach().cpu().numpy().squeeze()
-        # log_hr = torch.matmul(emb_weight + net.embed_diagt.weight[1,:], fc_weight).detach().cpu().numpy().squeeze()
-        # log_hr_diagt = torch.matmul(net.embed_diagt.weight, fc_weight).detach().cpu().numpy().squeeze()
         
         # Save
         log_hr_matrix[:, i] = log_hr
-        # log_hr_dt_mat[:, i] = log_hr_diagt
     
     # Compute HRs
     mean_hr = np.exp(log_hr_matrix.mean(axis=1))
@@ -107,7 +103,7 @@ def main():
     
     # Save
     df_index_code.sort_values(by=['TYPE', 'lCI'], ascending=False, inplace=True)
-    df_index_code.to_csv(hp.data_dir + 'hr.csv', index=False)    
+    df_index_code.to_csv(hp.data_dir + 'hr_' + hp.gender + '.csv', index=False)    
     
     # Plot
     # hr_diagt = np.exp(log_hr_dt_mat)

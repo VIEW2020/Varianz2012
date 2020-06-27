@@ -98,7 +98,7 @@ def main():
         # early stopping
         if loss_val < best:
             print('############### Saving good model ###############################')
-            torch.save(net.state_dict(), hp.log_dir + hp.model_name)
+            torch.save(net.state_dict(), hp.data_dir + 'log/' + hp.model_name)
             best = loss_val
             num_bad_epochs = 0
         else:
