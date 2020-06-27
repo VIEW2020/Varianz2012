@@ -71,7 +71,7 @@ def main():
     log_hr_matrix = np.zeros((df_index_code.shape[0], len(models)))
 
     # Neural Net
-    n_inputs = 18
+    n_inputs = 17
     net = NetAttention(n_inputs, df_index_code.shape[0]+1, hp) #+1 for zero padding
 
     for i in range(len(models)):
@@ -83,7 +83,7 @@ def main():
         # HRs
         emb_weight = net.embed_codes.weight # primary diagnostic codes
         emb_weight = emb_weight[1:,:]
-        fc_weight = net.fc.weight[:,18:].t()
+        fc_weight = net.fc.weight[:,17:].t()
         log_hr = torch.matmul(emb_weight, fc_weight).detach().cpu().numpy().squeeze()
         
         # Save
@@ -98,8 +98,8 @@ def main():
     df_index_code['uCI'] = uCI
     
     # Keep only codes existing as primary
-    # primary_codes = feather.read_dataframe(hp.data_pp_dir + 'primary_codes.feather')
-    # df_index_code = df_index_code[(df_index_code['TYPE'] == 0) | df_index_code['CODE'].isin(primary_codes['CLIN_CD_10'])]
+    primary_codes = feather.read_dataframe(hp.data_pp_dir + 'primary_codes.feather')
+    df_index_code = df_index_code[(df_index_code['TYPE'] == 0) | df_index_code['CODE'].isin(primary_codes['CLIN_CD_10'])]
     
     # Save
     df_index_code.sort_values(by=['TYPE', 'lCI'], ascending=False, inplace=True)
