@@ -98,8 +98,8 @@ def main():
     df_index_code['uCI'] = uCI
     
     # Keep only codes existing as primary
-    primary_codes = feather.read_dataframe(hp.data_pp_dir + 'primary_codes.feather')
-    df_index_code = df_index_code[(df_index_code['TYPE'] == 0) | df_index_code['CODE'].isin(primary_codes['CLIN_CD_10'])]
+    # primary_codes = feather.read_dataframe(hp.data_pp_dir + 'primary_codes.feather')
+    # df_index_code = df_index_code[(df_index_code['TYPE'] == 0) | df_index_code['CODE'].isin(primary_codes['CLIN_CD_10'])]
     
     # Save
     df_index_code.sort_values(by=['TYPE', 'lCI'], ascending=False, inplace=True)
