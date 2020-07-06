@@ -61,49 +61,56 @@ def main():
     print('Merge...')
     df_index_code['CODE'] = df_index_code['CODE'].astype(str)
     df_index_code = df_index_code.merge(lookup,   how='left', on=['CODE', 'TYPE'])
+    n_embeddings = df_index_code.shape[0]
+
+    print('Add standard columns...')
+    cols_list = load_obj(hp.data_pp_dir + 'cols_list.pkl')
+    n_cols = len(cols_list)
+    df_cols = pd.DataFrame({'TYPE': 2, 'DESCRIPTION': cols_list})
+    df_index_code = pd.concat([df_cols, df_index_code], sort=False)
 
     #######################################################################################################
         
     print('Compute HRs...')
     
     # Trained models
-    models = listdir(hp.data_dir + 'log_' + hp.gender + '/')
-    log_hr_matrix = np.zeros((df_index_code.shape[0], len(models)))
+    models = listdir(hp.data_dir + 'mincount300/log_' + hp.gender + '/')
+    log_hr_columns = np.zeros((n_cols, len(models)))
+    log_hr_embeddings = np.zeros((n_embeddings, len(models)))
 
     # Neural Net
-    n_inputs = 17
-    net = NetAttention(n_inputs, df_index_code.shape[0]+1, hp) #+1 for zero padding
+    net = NetAttention(n_cols, n_embeddings+1, hp) #+1 for zero padding
 
     for i in range(len(models)):
         print('HRs for model {}'.format(i))
         
         # Restore variables from disk
-        net.load_state_dict(torch.load(hp.data_dir + 'log_' + hp.gender + '/' + models[i], map_location=hp.device))
+        net.load_state_dict(torch.load(hp.data_dir + 'mincount300/log_' + hp.gender + '/' + models[i], map_location=hp.device))
         
         # HRs
         emb_weight = net.embed_codes.weight # primary diagnostic codes
         emb_weight = emb_weight[1:,:]
-        fc_weight = net.fc.weight[:,17:].t()
-        log_hr = torch.matmul(emb_weight, fc_weight).detach().cpu().numpy().squeeze()
+        fc_weight = net.fc.weight[:,n_cols:].t()
         
-        # Save
-        log_hr_matrix[:, i] = log_hr
+        # Store
+        log_hr_columns[:, i] = net.fc.weight[:,0:n_cols].detach().cpu().numpy().squeeze()
+        log_hr_embeddings[:, i] = torch.matmul(emb_weight, fc_weight).detach().cpu().numpy().squeeze()
     
     # Compute HRs
+    log_hr_matrix = np.concatenate((log_hr_columns, log_hr_embeddings))
     mean_hr = np.exp(log_hr_matrix.mean(axis=1))
     lCI, uCI = np.exp(sms.DescrStatsW(log_hr_matrix.transpose()).tconfint_mean())
-    
     df_index_code['HR'] = mean_hr
     df_index_code['lCI'] = lCI
     df_index_code['uCI'] = uCI
     
     # Keep only codes existing as primary
-    # primary_codes = feather.read_dataframe(hp.data_pp_dir + 'primary_codes.feather')
-    # df_index_code = df_index_code[(df_index_code['TYPE'] == 0) | df_index_code['CODE'].isin(primary_codes['CLIN_CD_10'])]
+    #primary_codes = feather.read_dataframe(hp.data_pp_dir + 'primary_codes.feather')
+    #df_index_code = df_index_code[(df_index_code['TYPE'] == 0) | (df_index_code['TYPE'] == 2) | df_index_code['CODE'].isin(primary_codes['CLIN_CD_10'])]
     
     # Save
     df_index_code.sort_values(by=['TYPE', 'lCI'], ascending=False, inplace=True)
-    df_index_code.to_csv(hp.data_dir + 'hr_' + hp.gender + '.csv', index=False)    
+    df_index_code.to_csv(hp.data_dir + 'mincount300/hr_' + hp.gender + '.csv', index=False)
     
     # Plot
     # hr_diagt = np.exp(log_hr_dt_mat)

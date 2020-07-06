@@ -57,6 +57,13 @@ def main():
     df_index_code = feather.read_dataframe(hp.data_pp_dir + 'df_index_code_males.feather')
     
     ####################################################################################################### 
+    #print('Bootstrapping training data...')
+    #n_cases = len(case_idx_trn)
+    #sample_idx = np.random.choice(np.arange(n_cases), n_cases, replace=True)
+    #case_idx_trn = case_idx_trn[sample_idx]
+    #max_idx_control_trn = max_idx_control_trn[sample_idx]
+    
+    ####################################################################################################### 
 
     print('Create data loaders and tensors...')
     case_trn = utils.TensorDataset(torch.from_numpy(x_trn[case_idx_trn]),
