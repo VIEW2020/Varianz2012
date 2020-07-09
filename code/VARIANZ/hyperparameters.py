@@ -38,7 +38,8 @@ class Hyperparameters:
     patience = 10 # early stopping
     
     # Network
-    embedding_dim = 128
+    #embedding_dim = 128
+    embedding_dim = 32
     num_months_hx = 60
     
     now = datetime.now() # current date and time

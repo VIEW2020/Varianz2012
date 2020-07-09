@@ -215,7 +215,7 @@ def val(val_loader, x_val, code_val, month_val, diagt_val, model, criterion, epo
         return loss
 
 
-class NetAttentionOld(nn.Module):
+class NetAttentionOK(nn.Module):
     def __init__(self, n_input, num_embeddings, hp):
         super(NetAttention, self).__init__()
         self.embedding_dim = hp.embedding_dim
@@ -240,18 +240,18 @@ class NetAttentionOld(nn.Module):
         return x
 
 
-class NetAttention(nn.Module):
+class NetAttentionTrans(nn.Module):
     def __init__(self, n_input, num_embeddings, hp):
         super(NetAttention, self).__init__()
         from torch.nn import TransformerEncoder, TransformerEncoderLayer
         self.embedding_dim = hp.embedding_dim
         # Embedding layers
-        self.embed_codes = nn.Embedding(num_embeddings = num_embeddings,   embedding_dim = hp.embedding_dim, padding_idx = 0, max_norm = 1, norm_type = 2.)
-        self.embed_month = nn.Embedding(num_embeddings = hp.num_months_hx, embedding_dim = hp.embedding_dim, padding_idx = 0, max_norm = 1, norm_type = 2.)        
-        self.embed_diagt = nn.Embedding(num_embeddings = 4,                embedding_dim = hp.embedding_dim, padding_idx = 0, max_norm = 1, norm_type = 2.)
+        self.embed_codes = nn.Embedding(num_embeddings = num_embeddings,   embedding_dim = hp.embedding_dim, padding_idx = 0)
+        #self.embed_month = nn.Embedding(num_embeddings = hp.num_months_hx, embedding_dim = hp.embedding_dim, padding_idx = 0)        
+        #self.embed_diagt = nn.Embedding(num_embeddings = 4,                embedding_dim = hp.embedding_dim, padding_idx = 0)
         # Transformer encoder
-        encoder_layer = TransformerEncoderLayer(d_model = hp.embedding_dim, nhead = 1)
-        self.transformer_encoder = TransformerEncoder(encoder_layer, num_layers = 1)
+        encoder_layer = TransformerEncoderLayer(d_model = hp.embedding_dim, nhead = 1, dim_feedforward = hp.embedding_dim)
+        self.transformer_encoder = TransformerEncoder(encoder_layer, num_layers = 3)
         # Fully connected layers
         self.relu = nn.ReLU()
         self.fc_size = n_input + hp.embedding_dim
@@ -263,12 +263,13 @@ class NetAttention(nn.Module):
         if time is not None:
             x = torch.cat([x, time], 1)
         embedded_codes = self.embed_codes(code.long())
-        embedded_month = self.embed_month(month.long())
-        embedded_diagt = self.embed_diagt(diagt.long())
+        #embedded_month = self.embed_month(month.long())
+        #embedded_diagt = self.embed_diagt(diagt.long())
         mask = (code == 0)
-        embedded = embedded_codes + embedded_month + embedded_diagt
+        embedded = embedded_codes #+ embedded_month + embedded_diagt
         encoded = self.transformer_encoder(embedded.permute(1, 0, 2), src_key_padding_mask = mask).permute(1, 0, 2)
         encoded = encoded.sum(dim=-2) / ((~mask).sum(dim=-1, keepdim=True))
+        #encoded, _ = encoded.max(dim=-2)
         encoded[torch.isnan(encoded)] = 0 # nan from encoder and division if all codes are 0/masked
         x = torch.cat((x, encoded), dim=-1)
         x = x + self.relu(self.fc0(x)) # skip connections
@@ -276,6 +277,40 @@ class NetAttention(nn.Module):
         x = self.fc2(x)
         return x
 
+
+class NetAttention(nn.Module):
+    def __init__(self, n_input, num_embeddings, hp):
+        super(NetAttention, self).__init__()
+        from torch.nn import LSTM
+        self.embedding_dim = hp.embedding_dim
+        #Embedding layers
+        self.embed_codes = nn.Embedding(num_embeddings = num_embeddings, embedding_dim = hp.embedding_dim, padding_idx = 0)
+        #self.embed_diagt = nn.Embedding(num_embeddings = 4, embedding_dim = hp.embedding_dim, padding_idx = 0)
+        # RNN
+        self.embedding_dim = hp.embedding_dim
+        self.num_layes = 1
+        self.rnn = LSTM(input_size = hp.embedding_dim, hidden_size = hp.embedding_dim, num_layers = self.num_layes, batch_first = True, dropout = 0.1, bidirectional = True)
+        # Fully connected layers
+        self.relu = nn.ReLU()
+        self.fc_size = n_input + 2*hp.embedding_dim
+        self.fc0 = nn.Linear(self.fc_size, self.fc_size)
+        self.fc1 = nn.Linear(self.fc_size, self.fc_size)
+        self.fc2 = nn.Linear(self.fc_size, 1, bias=False)
+
+    def forward(self, x, code, month, diagt, time=None):
+        if time is not None:
+            x = torch.cat([x, time], 1)
+        embedded_codes = self.embed_codes(code.long())
+        #embedded_diagt = self.embed_diagt(diagt.long())
+        embedded = embedded_codes #+ embedded_diagt
+        _, (hidden, _) = self.rnn(embedded)
+        hidden = hidden.view(self.num_layes, 2, -1, self.embedding_dim)[-1] # view(num_layers, num_directions, batch, hidden_size)
+        x = torch.cat((x, hidden[0], hidden[1]), dim=-1)
+        x = x + self.relu(self.fc0(x)) # skip connections
+        x = x + self.relu(self.fc1(x))
+        x = self.fc2(x)
+        return x
+    
 
 def baseline_survival(df, log_partial_hazard):
     df['PARTIAL_HAZARD'] = np.exp(log_partial_hazard)
