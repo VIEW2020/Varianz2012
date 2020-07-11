@@ -9,142 +9,53 @@ import math
 import pandas as pd
 import pickle as pkl
 import torch
-import torch.utils.data as utils
-import torch.nn.functional as F
-import torch.nn as nn
-#from torch_scatter import scatter_add
-#from torch_scatter.composite import scatter_softmax
 from tqdm import tqdm
 
 from pdb import set_trace as bp
 
 
-def save_obj(obj, name):
-    with open(name, 'wb') as f:
-        pkl.dump(obj, f, pickle.HIGHEST_PROTOCOL)
-
-
-def load_obj(name):
-    with open(name, 'rb') as f:
-        return pkl.load(f)
-
-
-class Attention(torch.nn.Module):
-  """
-  Dot-product attention module.
-  
-  Args:
-    inputs: A `Tensor` with embeddings in the last dimension.
-    mask: A `Tensor`. Dimensions are the same as inputs but without the embedding dimension.
-      Values are 0 for 0-padding in the input and 1 elsewhere.
-  Returns:
-    outputs: The input `Tensor` whose embeddings in the last dimension have undergone a weighted average.
-      The second-last dimension of the `Tensor` is removed.
-    attention_weights: weights given to each embedding.
-  """
-  def __init__(self, embedding_dim):
-    super(Attention, self).__init__()
-    self.norm = np.sqrt(embedding_dim)
-    self.context = nn.Parameter(torch.Tensor(embedding_dim)) # context vector
-    self.linear_hidden = nn.Linear(embedding_dim, embedding_dim)
-    self.reset_parameters()
+def sort_and_case_indices(x, time, event):
+    """
+    Sort data to allow for efficient sampling of people at risk.
+    Time is in descending order, in case of ties non-events come first.
+    In general, after sorting, if the index of A is smaller than the index of B,
+    A is at risk when B experiences the event.
+    To avoid sampling from ties, the column 'MAX_IDX_CONTROL' indicates the maximum
+    index from which a case can be sampled.
     
-  def reset_parameters(self):
-    nn.init.normal_(self.context)
+    Args:
+        x: input data
+        time: time to event/censoring
+        event: binary vector, 1 if the person experienced an event or 0 if censored
+        
+    Returns:
+        sort_index: index to sort indices according to risk
+        case_index: index to extract cases (on data sorted by sort_index!)
+        max_idx_control: maximum index to sample a control for each case
+    """
+    # Sort
+    df = pd.DataFrame({'TIME': time, 'EVENT': event.astype(bool)})
+    df.sort_values(by=['TIME', 'EVENT'], ascending=[False, True], inplace=True)
+    sort_index = df.index
+    df.reset_index(drop=True, inplace=True)
 
-  def forward(self, input, mask):
-    # Hidden representation of embeddings (no change in dimensions)
-    hidden = torch.tanh(self.linear_hidden(input))
-    # Compute weight of each embedding
-    importance = torch.sum(hidden * self.context, dim=-1) / self.norm
-    importance = importance.masked_fill(mask == 0, -1e9)
-    # Softmax so that weights sum up to one
-    attention_weights = F.softmax(importance, dim=-1)
-    # Weighted sum of embeddings
-    weighted_projection = input * torch.unsqueeze(attention_weights, dim=-1)
-    # Output
-    output = torch.sum(weighted_projection, dim=-2)
-    return output, attention_weights
-
-
-class AttentionWeighted(torch.nn.Module):
-  """
-  Dot-product attention module.
-  
-  Args:
-    inputs: A `Tensor` with embeddings in the last dimension.
-    mask: A `Tensor`. Dimensions are the same as inputs but without the embedding dimension.
-      Values are 0 for 0-padding in the input and 1 elsewhere.
-  Returns:
-    outputs: The input `Tensor` whose embeddings in the last dimension have undergone a weighted average.
-      The second-last dimension of the `Tensor` is removed.
-    attention_weights: weights given to each embedding.
-  """
-  def __init__(self, embedding_dim):
-    super(AttentionWeighted, self).__init__()
-    self.norm = np.sqrt(embedding_dim)
-    self.context = nn.Parameter(torch.Tensor(embedding_dim)) # context vector
-    self.linear_hidden = nn.Linear(embedding_dim, embedding_dim)
-    self.reset_parameters()
+    # Max idx for sampling controls (either earlier times or same time but no event)
+    df['MAX_IDX_CONTROL'] = -1
+    max_idx_control = -1
+    prev_time = df.at[0, 'TIME']
+    print('Computing MAX_IDX_CONTROL, time for a(nother) coffee...')
+    for i, row in tqdm(df.iterrows(), total=df.shape[0]):
+        if not row['EVENT']:
+            max_idx_control = i
+        elif (prev_time > row['TIME']):
+            max_idx_control = i-1
+        df.at[i, 'MAX_IDX_CONTROL'] = max_idx_control
+        prev_time = row['TIME']
+    print('done')
+    df_case = df[df['EVENT'] & (df['MAX_IDX_CONTROL']>=0)]
+    case_index, max_idx_control = df_case.index, df_case['MAX_IDX_CONTROL'].values
     
-  def reset_parameters(self):
-    nn.init.normal_(self.context)
-
-  def forward(self, input, mask, weight):
-    # Hidden representation of embeddings (no change in dimensions)
-    hidden = torch.tanh(self.linear_hidden(input))
-    # Compute weight of each embedding
-    importance = torch.sum(hidden * self.context, dim=-1) / self.norm
-    importance = importance*weight
-    importance = importance.masked_fill(mask == 0, -1e9)
-    # Softmax so that weights sum up to one
-    attention_weights = F.softmax(importance, dim=-1)
-    # Weighted sum of embeddings
-    weighted_projection = input * torch.unsqueeze(attention_weights, dim=-1)
-    # Output
-    output = torch.sum(weighted_projection, dim=-2)
-    return output, attention_weights
-
-
-class ScatterAttention(torch.nn.Module):
-  """
-  Dot-product attention module.
-  
-  Args:
-    input: A `Tensor` with embeddings in the last dimension.
-    mask: A `Tensor`. Dimensions are the same as input but without the embedding dimension.
-      Values are 0 for 0-padding in the input and 1 elsewhere.
-
-  Returns:
-    output: The input `Tensor` whose embeddings in the last dimension have undergone a weighted average.
-      The second-last dimension of the `Tensor` is removed.
-    attention_weights: weights given to each embedding.
-  """
-  def __init__(self, embedding_dim, index_dim):
-    super(ScatterAttention, self).__init__()
-    self.embedding_dim = embedding_dim
-    self.index_dim = index_dim
-    self.norm = np.sqrt(embedding_dim)
-    self.context = nn.Parameter(torch.Tensor(embedding_dim)) # context vector
-    self.linear_hidden = nn.Linear(embedding_dim, embedding_dim)
-    self.reset_parameters()
-    
-  def reset_parameters(self):
-    nn.init.normal_(self.context)
-
-  def forward(self, input, mask, index):
-    # Hidden representation of embeddings (no change in dimensions)
-    hidden = torch.tanh(self.linear_hidden(input))
-    # Compute weight of each embedding
-    importance = torch.sum(hidden * self.context, dim=-1) / self.norm
-    importance = importance.masked_fill(mask == 0, -1e9)
-    # Softmax so that weights sum up to one
-    attention_weights = scatter_softmax(importance, index, dim=-1)
-    # Weighted sum of embeddings
-    weighted_projection = input * torch.unsqueeze(attention_weights, dim=-1)
-    # Output
-    output = scatter_add(weighted_projection, torch.unsqueeze(index, dim=-1), dim=-2, dim_size=self.index_dim)
-    return output, attention_weights
+    return sort_index, case_index, max_idx_control
 
 
 class CoxPHLoss(torch.nn.Module):
@@ -213,138 +124,5 @@ def val(val_loader, x_val, code_val, month_val, diagt_val, model, criterion, epo
 
         print('Epoch: {} Loss: {:.6f}'.format(epoch, loss.item()/len(val_loader)))
         return loss
-
-
-class NetAttentionOK(nn.Module):
-    def __init__(self, n_input, num_embeddings, hp):
-        super(NetAttention, self).__init__()
-        self.embedding_dim = hp.embedding_dim
-        # Embedding layers
-        self.embed_codes = nn.Embedding(num_embeddings = num_embeddings, embedding_dim = hp.embedding_dim, padding_idx = 0, max_norm = 1, norm_type = 2.)
-        # Exponential time decay coefficient
-        self.decay = nn.Parameter(torch.zeros(1))
-        # Attention
-        self.attention = AttentionWeighted(embedding_dim = hp.embedding_dim)
-        # Fully connected layers
-        self.fc_size = n_input + hp.embedding_dim
-        self.fc = nn.Linear(self.fc_size, 1, bias=False)
-
-    def forward(self, x, code, month, diagt, time=None):
-        if time is not None:
-            x = torch.cat([x, time], 1)
-        embedded_codes = self.embed_codes(code.long())
-        decay = torch.abs(self.decay) #needs to be positive
-        summary, _ = self.attention(embedded_codes, code, torch.exp(-decay*month))
-        x = torch.cat((x, summary), dim=-1)
-        x = self.fc(x)        
-        return x
-
-
-class NetAttentionTrans(nn.Module):
-    def __init__(self, n_input, num_embeddings, hp):
-        super(NetAttention, self).__init__()
-        from torch.nn import TransformerEncoder, TransformerEncoderLayer
-        self.embedding_dim = hp.embedding_dim
-        # Embedding layers
-        self.embed_codes = nn.Embedding(num_embeddings = num_embeddings,   embedding_dim = hp.embedding_dim, padding_idx = 0)
-        #self.embed_month = nn.Embedding(num_embeddings = hp.num_months_hx, embedding_dim = hp.embedding_dim, padding_idx = 0)        
-        #self.embed_diagt = nn.Embedding(num_embeddings = 4,                embedding_dim = hp.embedding_dim, padding_idx = 0)
-        # Transformer encoder
-        encoder_layer = TransformerEncoderLayer(d_model = hp.embedding_dim, nhead = 1, dim_feedforward = hp.embedding_dim)
-        self.transformer_encoder = TransformerEncoder(encoder_layer, num_layers = 3)
-        # Fully connected layers
-        self.relu = nn.ReLU()
-        self.fc_size = n_input + hp.embedding_dim
-        self.fc0 = nn.Linear(self.fc_size, self.fc_size)
-        self.fc1 = nn.Linear(self.fc_size, self.fc_size)
-        self.fc2 = nn.Linear(self.fc_size, 1, bias=False)
-
-    def forward(self, x, code, month, diagt, time=None):
-        if time is not None:
-            x = torch.cat([x, time], 1)
-        embedded_codes = self.embed_codes(code.long())
-        #embedded_month = self.embed_month(month.long())
-        #embedded_diagt = self.embed_diagt(diagt.long())
-        mask = (code == 0)
-        embedded = embedded_codes #+ embedded_month + embedded_diagt
-        encoded = self.transformer_encoder(embedded.permute(1, 0, 2), src_key_padding_mask = mask).permute(1, 0, 2)
-        encoded = encoded.sum(dim=-2) / ((~mask).sum(dim=-1, keepdim=True))
-        #encoded, _ = encoded.max(dim=-2)
-        encoded[torch.isnan(encoded)] = 0 # nan from encoder and division if all codes are 0/masked
-        x = torch.cat((x, encoded), dim=-1)
-        x = x + self.relu(self.fc0(x)) # skip connections
-        x = x + self.relu(self.fc1(x))
-        x = self.fc2(x)
-        return x
-
-
-class NetAttention(nn.Module):
-    def __init__(self, n_input, num_embeddings, hp):
-        super(NetAttention, self).__init__()
-        from torch.nn import LSTM
-        self.embedding_dim = hp.embedding_dim
-        #Embedding layers
-        self.embed_codes = nn.Embedding(num_embeddings = num_embeddings, embedding_dim = hp.embedding_dim, padding_idx = 0)
-        #self.embed_diagt = nn.Embedding(num_embeddings = 4, embedding_dim = hp.embedding_dim, padding_idx = 0)
-        # RNN
-        self.embedding_dim = hp.embedding_dim
-        self.num_layes = 1
-        self.rnn = LSTM(input_size = hp.embedding_dim, hidden_size = hp.embedding_dim, num_layers = self.num_layes, batch_first = True, dropout = 0.1, bidirectional = True)
-        # Fully connected layers
-        self.relu = nn.ReLU()
-        self.fc_size = n_input + 2*hp.embedding_dim
-        self.fc0 = nn.Linear(self.fc_size, self.fc_size)
-        self.fc1 = nn.Linear(self.fc_size, self.fc_size)
-        self.fc2 = nn.Linear(self.fc_size, 1, bias=False)
-
-    def forward(self, x, code, month, diagt, time=None):
-        if time is not None:
-            x = torch.cat([x, time], 1)
-        embedded_codes = self.embed_codes(code.long())
-        #embedded_diagt = self.embed_diagt(diagt.long())
-        embedded = embedded_codes #+ embedded_diagt
-        _, (hidden, _) = self.rnn(embedded)
-        hidden = hidden.view(self.num_layes, 2, -1, self.embedding_dim)[-1] # view(num_layers, num_directions, batch, hidden_size)
-        x = torch.cat((x, hidden[0], hidden[1]), dim=-1)
-        x = x + self.relu(self.fc0(x)) # skip connections
-        x = x + self.relu(self.fc1(x))
-        x = self.fc2(x)
-        return x
-    
-
-def baseline_survival(df, log_partial_hazard):
-    df['PARTIAL_HAZARD'] = np.exp(log_partial_hazard)
-    df = df[['TIME', 'EVENT', 'PARTIAL_HAZARD']]
-    df = df.groupby(['TIME']).sum().sort_index(ascending=False)
-    df['CUM_PARTIAL_HAZARD'] = df['PARTIAL_HAZARD'].cumsum()
-    df = df[df['EVENT']>0]
-    df['ALPHA'] = np.exp(-df['EVENT']/df['CUM_PARTIAL_HAZARD'])
-    df.sort_index(inplace=True)
-    df['S0'] = df['ALPHA'].cumprod()
-    return df['S0']
-
-
-def log(model_name, concordance, brier, nbll, hp):
-    df = pd.DataFrame({'model_name': model_name,
-                       'np_seed': hp.np_seed,
-                       'torch_seed': hp.torch_seed,
-                       'min_count': hp.min_count,
-                       'nonprop_hazards': hp.nonprop_hazards,
-                       'batch_size': hp.batch_size,
-                       'max_epochs': hp.max_epochs,
-                       'patience': hp.patience,
-                       'embedding_dim': hp.embedding_dim,
-                       'num_months_hx': hp.num_months_hx,
-                       'sample_comp_bh': hp.sample_comp_bh,
-                       'concordance': concordance,
-                       'brier': brier,
-                       'nbll': nbll},
-                       index=[0])
-    with open(hp.data_dir + 'logfile.csv', 'a', newline='\n') as f:
-        df.to_csv(f, mode='a', index=False, header=(not f.tell()))
-                       
-                       
-
-
 
 
