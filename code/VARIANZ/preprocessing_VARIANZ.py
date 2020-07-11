@@ -17,6 +17,7 @@ def main():
     # Exclude
     df.dropna(subset=['end_fu_date'], inplace=True)
     df = df[~df['ph_loopdiuretics_prior_5yrs_3evts'].astype(bool)]
+    df = df[~df['ph_antianginals_prior_5yrs_3evts' ].astype(bool)]
     
     # Adjust data types
     df['nhi_age'] = df['nhi_age'].astype(int)
@@ -66,16 +67,6 @@ def main():
     df['antiplat_anticoag_X_diabetes'] = df['ph_antiplat_anticoag_prior_6mths'] & df['hx_vdr_diabetes']
     df['bp_X_af'] = df['ph_bp_lowering_prior_6mths'] & df['hx_af']
     
-    # Keep all relevant columns
-    # keep_cols = ['VSIMPLE_INDEX_MASTER', 'nhi_age', 'gender_code', 'en_prtsd_eth', 'en_nzdep_q', 
-    # 'hx_vdr_diabetes', 'hx_af', 'ph_antiplatelets_prior_6mths', 'ph_anticoagulants_prior_6mths', 
-    # 'ph_lipid_lowering_prior_6mths', 'ph_bp_lowering_prior_6mths', 'TIME', 'EVENT']
-    # df = df[keep_cols]
-    
-    # Keep all relevant columns (exclude history of medications and hospital events to reduce collinearity issues)
-    # keep_cols = ['VSIMPLE_INDEX_MASTER', 'nhi_age', 'gender_code', 'en_nzdep_q', 'en_prtsd_eth', 'TIME', 'EVENT']
-    # df = df[keep_cols]
-
     # Keep all VARIANZ risk equations columns
     keep_cols = ['VSIMPLE_INDEX_MASTER', 'nhi_age', 'gender_code', 'en_prtsd_eth', 'en_nzdep_q', 
     'hx_vdr_diabetes', 'hx_af', 'ph_bp_lowering_prior_6mths', 'ph_lipid_lowering_prior_6mths',

@@ -21,9 +21,6 @@ def main():
     print('Remove future data...')
     df = df[df['dispmonth_index'] < 60]
     
-    print('Invert time...')
-    df['dispmonth_index'] = 59 - df['dispmonth_index']
-
     print('Split males and females...')
     males = feather.read_dataframe(hp.data_pp_dir + 'Py_VARIANZ_2012_v3-1_pp_males.feather')['VSIMPLE_INDEX_MASTER']
     females = feather.read_dataframe(hp.data_pp_dir + 'Py_VARIANZ_2012_v3-1_pp_females.feather')['VSIMPLE_INDEX_MASTER']

@@ -10,7 +10,11 @@ from pdb import set_trace as bp
 
 class Hyperparameters:
     ''' Hyperparameters '''
+    
+    ### General #########################################################
+    
     gender = 'males'
+    min_count = 200 # codes whose occurrence is less than min_count are encoded as OTHER
     
     # Data
     data_dir = '../../data/'
@@ -21,9 +25,6 @@ class Hyperparameters:
     # Seeds
     np_seed = 1234
     torch_seed = 42
-	
-    # Model
-    min_count = 300 # codes whose occurrence is less than min_count are encoded as OTHER
     
     # Training
     if torch.cuda.is_available():
@@ -32,18 +33,20 @@ class Hyperparameters:
     else:
         device = torch.device('cpu')
 
+    ### Model ###########################################################
+
     nonprop_hazards = False
-    batch_size = 32
+    batch_size = 256
     max_epochs = 10000
     patience = 10 # early stopping
     
     # Network
-    #embedding_dim = 128
-    embedding_dim = 32
+    embedding_dim = 16
     num_months_hx = 60
     
     now = datetime.now() # current date and time
     model_name = 'model_' + now.strftime('%Y%m%d_%H%M%S_%f') + '.pt'
 
-    # Evaluation
+    ### Evaluation ######################################################
+    
     sample_comp_bh = 10000 if nonprop_hazards else None

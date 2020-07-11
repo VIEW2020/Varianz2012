@@ -11,9 +11,6 @@ import pickle as pkl
 from hyperparameters import Hyperparameters as hp
 
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn_pandas import DataFrameMapper
-from pycox.models import CoxTime
 from tqdm import tqdm
 
 from pdb import set_trace as bp
@@ -88,9 +85,8 @@ def main():
         df.reset_index(drop=True, inplace=True)
         df_index_person = df['VSIMPLE_INDEX_MASTER'].reset_index().rename(columns={'index': 'INDEX_PERSON'})
 
-        # static variables
+        # convert cathegorical ethnicity into indicator variables
         print('Create dummy variables...')
-        # Convert cathegorical ethnicity into indicator variables
         df = pd.get_dummies(df, prefix='en_prtsd_eth', columns=['en_prtsd_eth'], drop_first=True)
         
         print('-----------------------------------------')
@@ -134,62 +130,28 @@ def main():
         month_trn, month_val, month_tst = month[df_trn.index], month[df_val.index], month[df_tst.index]
         diagt_trn, diagt_val, diagt_tst = diagt[df_trn.index], diagt[df_val.index], diagt[df_tst.index]
 
-        # Feature Transforms
-        print('Scale continuous features...')
-        cols_standardize = [] # not standardizing 'nhi_age' to facilitate comparison with VARIANZ equations
-        trans_list = []
-        cols_list = []
-        for col in df.columns.values.tolist():
-            if col != 'TIME' and col !='EVENT' and col !='VSIMPLE_INDEX_MASTER' and col !='gender_code':
-                cols_list.append(col)
-                if col in cols_standardize:
-                    trans_list.append(([col], StandardScaler()))
-                else:
-                    trans_list.append((col, None))
-        x_mapper = DataFrameMapper(trans_list)
-        
-        x_trn = x_mapper.fit_transform(df_trn).astype('float32')
-        x_val = x_mapper.transform(df_val).astype('float32')
-        x_tst = x_mapper.transform(df_tst).astype('float32')
-
-        # Get target
-        print('Get time and events...')
-        get_target = lambda df: (df['TIME'].values, df['EVENT'].values)
-        labtrans = CoxTime.label_transform()
-        # Scale time for nonproportional hazards
-        time_trn_nonprop, _ = labtrans.fit_transform(*get_target(df_trn)) # ignore event_trn_nonprop
-        time_val_nonprop, _ = labtrans.transform(*get_target(df_val)) # ignore event_val_nonprop
-        # For proportional hazards
-        time_trn, event_trn = get_target(df_trn)
-        time_val, event_val = get_target(df_val)
-        time_tst, event_tst = get_target(df_tst)
-
         # Create datasets
         sort_idx_trn, case_idx_trn, max_idx_control_trn = sort_and_case_indices(x_trn, time_trn, event_trn)
         x_trn, time_trn, event_trn = x_trn[sort_idx_trn], time_trn[sort_idx_trn], event_trn[sort_idx_trn]
         codes_trn, month_trn, diagt_trn = codes_trn[sort_idx_trn], month_trn[sort_idx_trn], diagt_trn[sort_idx_trn]
-        time_trn_nonprop = time_trn_nonprop[sort_idx_trn]
         
         sort_idx_val, case_idx_val, max_idx_control_val = sort_and_case_indices(x_val, time_val, event_val)
         x_val, time_val, event_val = x_val[sort_idx_val], time_val[sort_idx_val], event_val[sort_idx_val]
         codes_val, month_val, diagt_val = codes_val[sort_idx_val], month_val[sort_idx_val], diagt_val[sort_idx_val]
-        time_val_nonprop = time_val_nonprop[sort_idx_val]
         
         print('-----------------------------------------')
         print('Save...')
-        np.savez(hp.data_pp_dir + 'data_arrays_' + gender + '.npz', x_trn=x_trn, time_trn=time_trn, event_trn=event_trn,
+        np.savez(hp.data_pp_dir + 'data_arrays_' + gender + '.npz', 
+            x_trn=x_trn, time_trn=time_trn, event_trn=event_trn,
             codes_trn=codes_trn, month_trn=month_trn, diagt_trn=diagt_trn,
             case_idx_trn=case_idx_trn, max_idx_control_trn=max_idx_control_trn,
             x_val=x_val, time_val=time_val, event_val=event_val,
             codes_val=codes_val, month_val=month_val, diagt_val=diagt_val,
             case_idx_val=case_idx_val, max_idx_control_val=max_idx_control_val,
-            x_tst=x_tst, time_tst=time_tst, event_tst=event_tst, codes_tst=codes_tst, month_tst=month_tst, diagt_tst=diagt_tst,)
-        np.savez(hp.data_pp_dir + 'data_arrays_nonprop_hazards_' + gender + '.npz', time_trn_nonprop=time_trn_nonprop, time_val_nonprop=time_val_nonprop)
-        with open(hp.data_pp_dir + 'labtrans_' + gender + '.pkl', 'wb') as f:
-            pkl.dump(labtrans, f)
+            x_tst=x_tst, time_tst=time_tst, event_tst=event_tst, 
+            codes_tst=codes_tst, month_tst=month_tst, diagt_tst=diagt_tst)
         df_index_code.to_feather(hp.data_pp_dir + 'df_index_code_' + gender + '.feather')
-        with open(hp.data_pp_dir + 'cols_list.pkl', 'wb') as f:
-            pkl.dump(cols_list, f)
+        save_obj(cols_list, hp.data_pp_dir + 'cols_list.pkl')
 
 if __name__ == '__main__':
     main()
