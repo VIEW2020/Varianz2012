@@ -6,11 +6,13 @@ https://www.github.com/sebbarb/
 
 import feather
 import pandas as pd
-from hyperparameters import Hyperparameters as hp
+from hyperparameters import Hyperparameters
 
 from pdb import set_trace as bp
 
 def main():
+    hp = Hyperparameters()
+    
     # Load data
     df = feather.read_dataframe(hp.data_dir + 'Py_VARIANZ_2012_v3-1.feather')
     

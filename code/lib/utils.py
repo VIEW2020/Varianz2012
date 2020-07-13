@@ -14,7 +14,7 @@ from pdb import set_trace as bp
 
 def save_obj(obj, name):
     with open(name, 'wb') as f:
-        pkl.dump(obj, f, pickle.HIGHEST_PROTOCOL)
+        pkl.dump(obj, f, pkl.HIGHEST_PROTOCOL)
 
 
 def load_obj(name):

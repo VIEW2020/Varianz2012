@@ -6,12 +6,14 @@ https://www.github.com/sebbarb/
 
 import feather
 import pandas as pd
-from hyperparameters import Hyperparameters as hp
+from hyperparameters import Hyperparameters
 
 from pdb import set_trace as bp
 
 
 def main():
+    hp = Hyperparameters()
+    
     df = feather.read_dataframe(hp.data_dir + 'ALL_PHARMS_2008_2012_v3-1.feather')
     df['chem_id'] = df['chem_id'].astype(int)
     df['dispmonth_index'] = df['dispmonth_index'].astype(int)

@@ -30,13 +30,9 @@ import optuna
 from pdb import set_trace as bp
 
 
-def objective(trial):
+def objective(trial, data, df_index_code):
     hp = Hyperparameters(trial)
-    print(trial.params)    
-    
-    # Load data
-    print('Load data...')
-    data = np.load(hp.data_pp_dir + 'data_arrays_' + hp.gender + '.npz')
+    print(trial.params)
     
     x_trn = data['x_trn']
     time_trn = data['time_trn']
@@ -55,8 +51,6 @@ def objective(trial):
     diagt_val = data['diagt_val']
     case_idx_val = data['case_idx_val']
     max_idx_control_val = data['max_idx_control_val']
-    
-    df_index_code = feather.read_dataframe(hp.data_pp_dir + 'df_index_code_' + hp.gender + '.feather')
     
     ####################################################################################################### 
 
@@ -119,15 +113,18 @@ def objective(trial):
 
 
 def main():
+    pp = Hyperparameters()
+    
+    print('Load data...')
+    data = np.load(pp.data_pp_dir + 'data_arrays_' + pp.gender + '.npz')
+    df_index_code = feather.read_dataframe(pp.data_pp_dir + 'df_index_code_' + pp.gender + '.feather')
+    
+    print('Begin study...')
     study = optuna.create_study(sampler=optuna.samplers.TPESampler(seed=10), pruner=optuna.pruners.SuccessiveHalvingPruner())
-    study.optimize(objective, timeout=2*60*60)
-    study.best_params
-    save_obj(study)
+    study.optimize(lambda trial: objective(trial, data, df_index_code), n_trials=1)
     
-    #objective(optuna.trial.FixedTrial({'summarize': 'output_avg'}))
-    
+    save_obj(study, 'study')
     bp()
-
 
 if __name__ == '__main__':
     main()

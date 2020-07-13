@@ -8,7 +8,7 @@ import feather
 import pandas as pd
 import numpy as np
 import pickle as pkl
-from hyperparameters import Hyperparameters as hp
+from hyperparameters import Hyperparameters
 from sklearn.model_selection import train_test_split
 from deep_survival import sort_and_case_indices
 from utils import save_obj
@@ -19,6 +19,7 @@ from pdb import set_trace as bp
   
   
 def main():
+    hp = Hyperparameters()
     np.random.seed(hp.np_seed)
 
     for gender in ['males', 'females']:
