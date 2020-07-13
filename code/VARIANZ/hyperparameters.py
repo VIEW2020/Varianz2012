@@ -5,48 +5,71 @@ https://www.github.com/sebbarb/
 '''
 
 import torch
+import optuna
 from datetime import datetime
 from pdb import set_trace as bp
 
 class Hyperparameters:
-    ''' Hyperparameters '''
+    def __init__(self, trial=None):
     
-    ### General #########################################################
-    
-    gender = 'males'
-    min_count = 200 # codes whose occurrence is less than min_count are encoded as OTHER
-    
-    # Data
-    data_dir = '../../data/'
-    data_pp_dir = '../../data/pp/'
-    log_dir = data_dir + 'log_' + gender + '/'
-    plot_dir = data_dir + 'plot/'
-    
-    # Seeds
-    np_seed = 1234
-    torch_seed = 42
-    
-    # Training
-    if torch.cuda.is_available():
-        device = torch.device('cuda:0')
-        torch.backends.cudnn.benchmark = True
-    else:
-        device = torch.device('cpu')
+        ### General #########################################################
+        
+        self.gender = 'males'
+        self.min_count = 200 # codes whose occurrence is less than min_count are encoded as OTHER
+        
+        # Data
+        self.data_dir = '../../data/'
+        self.data_pp_dir = '../../data/pp/'
+        self.log_dir = self.data_dir + 'log_' + self.gender + '/'
+        self.plot_dir = self.data_dir + 'plot/'
+        
+        # Seeds
+        self.np_seed = 1234
+        self.torch_seed = 42
+        
+        # Training
+        if torch.cuda.is_available():
+            self.device = torch.device('cuda:0')
+            torch.backends.cudnn.benchmark = True
+        else:
+            self.device = torch.device('cpu')
 
-    ### Model ###########################################################
+        ### Model ###########################################################
 
-    nonprop_hazards = False
-    batch_size = 256
-    max_epochs = 10000
-    patience = 10 # early stopping
-    
-    # Network
-    embedding_dim = 16
-    num_months_hx = 60
-    
-    now = datetime.now() # current date and time
-    model_name = 'model_' + now.strftime('%Y%m%d_%H%M%S_%f') + '.pt'
-
-    ### Evaluation ######################################################
-    
-    sample_comp_bh = 10000 if nonprop_hazards else None
+        self.batch_size = 256
+        self.max_epochs = 10000
+        self.patience = 10 # early stopping
+        self.num_months_hx = 60
+        now = datetime.now() # current date and time
+        self.model_name = now.strftime('%Y%m%d_%H%M%S_%f') + '.pt'    
+            
+        # Network
+        if trial:
+            self.nonprop_hazards = trial.suggest_categorical('nonprop_hazards', [True, False])
+            self.embedding_dim = trial.suggest_categorical('embedding_dim', [16, 32, 64, 128])
+            self.rnn_type = trial.suggest_categorical('rnn_type', ['GRU', 'LSTM'])
+            self.num_rnn_layers = trial.suggest_int('num_rnn_layers', 1, 3)
+            if self.num_rnn_layers > 1:
+                self.dropout = trial.suggest_discrete_uniform('dropout', 0.0, 0.5, 0.1)
+            else:
+                self.dropout = trial.suggest_discrete_uniform('dropout', 0.0, 0.0, 0.1)
+            self.num_mlp_layers = trial.suggest_int('num_mlp_layers', 0, 2)
+            self.add_diagt = trial.suggest_categorical('add_diagt', [True, False])
+            self.add_month = trial.suggest_categorical('add_month', ['ignore', 'concat', 'embedding'])
+            self.summarize = trial.suggest_categorical('summarize', ['hidden', 'output_max', 'output_sum', 'output_avg'])
+            self.learning_rate = trial.suggest_categorical('learning_rate', [1e-4, 1e-3, 1e-2])
+        else:
+            self.nonprop_hazards = True
+            self.embedding_dim = 16
+            self.rnn_type = 'GRU'
+            self.num_rnn_layers = 1
+            self.dropout = 0.0
+            self.num_mlp_layers = 0
+            self.add_diagt = False
+            self.add_month = 'ignore'
+            self.summarize = 'output_max'
+            self.learning_rate = 1e-2
+        
+        ### Evaluation ######################################################
+        
+        self.sample_comp_bh = 10000

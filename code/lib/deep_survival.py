@@ -9,6 +9,7 @@ import math
 import pandas as pd
 import pickle as pkl
 import torch
+import torch.nn.functional as F
 from tqdm import tqdm
 
 from pdb import set_trace as bp
@@ -122,7 +123,8 @@ def val(val_loader, x_val, code_val, month_val, diagt_val, model, criterion, epo
             risk_case, risk_control = model(x_cc, code_cc, month_cc, diagt_cc, time_cc).chunk(2)
             loss += criterion(risk_case, risk_control)
 
-        print('Epoch: {} Loss: {:.6f}'.format(epoch, loss.item()/len(val_loader)))
-        return loss
+        loss_norm = loss.item()/len(val_loader)
+        print('Epoch: {} Loss: {:.6f}'.format(epoch, loss_norm))
+        return loss_norm
 
 

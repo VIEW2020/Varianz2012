@@ -9,55 +9,13 @@ import pandas as pd
 import numpy as np
 import pickle as pkl
 from hyperparameters import Hyperparameters as hp
-
 from sklearn.model_selection import train_test_split
+from deep_survival import sort_and_case_indices
+from utils import save_obj
+
 from tqdm import tqdm
 
 from pdb import set_trace as bp
-
-
-def sort_and_case_indices(x, time, event):
-    """
-    Sort data to allow for efficient sampling of people at risk.
-    Time is in descending order, in case of ties non-events come first.
-    In general, after sorting, if the index of A is smaller than the index of B,
-    A is at risk when B experiences the event.
-    To avoid sampling from ties, the column 'MAX_IDX_CONTROL' indicates the maximum
-    index from which a case can be sampled.
-    
-    Args:
-        x: input data
-        time: time to event/censoring
-        event: binary vector, 1 if the person experienced an event or 0 if censored
-        
-    Returns:
-        sort_index: index to sort indices according to risk
-        case_index: index to extract cases (on data sorted by sort_index!)
-        max_idx_control: maximum index to sample a control for each case
-    """
-    # Sort
-    df = pd.DataFrame({'TIME': time, 'EVENT': event.astype(bool)})
-    df.sort_values(by=['TIME', 'EVENT'], ascending=[False, True], inplace=True)
-    sort_index = df.index
-    df.reset_index(drop=True, inplace=True)
-
-    # Max idx for sampling controls (either earlier times or same time but no event)
-    df['MAX_IDX_CONTROL'] = -1
-    max_idx_control = -1
-    prev_time = df.at[0, 'TIME']
-    print('Computing MAX_IDX_CONTROL, time for a(nother) coffee...')
-    for i, row in tqdm(df.iterrows(), total=df.shape[0]):
-        if not row['EVENT']:
-            max_idx_control = i
-        elif (prev_time > row['TIME']):
-            max_idx_control = i-1
-        df.at[i, 'MAX_IDX_CONTROL'] = max_idx_control
-        prev_time = row['TIME']
-    print('done')
-    df_case = df[df['EVENT'] & (df['MAX_IDX_CONTROL']>=0)]
-    case_index, max_idx_control = df_case.index, df_case['MAX_IDX_CONTROL'].values
-    
-    return sort_index, case_index, max_idx_control
   
   
 def main():

@@ -5,8 +5,6 @@ https://www.github.com/sebbarb/
 '''
 
 import sys
-#sys.path.append('E:/Libraries/Python/')
-#sys.path.append('..\\lib\\')
 sys.path.append('../lib/')
 
 import numpy as np
@@ -24,17 +22,21 @@ import torch.optim as optim
 import torch.nn.functional as F
 
 from deep_survival import *
-from hyperparameters import Hyperparameters as hp
+from utils import *
+from rnn_models import *
+from hyperparameters import Hyperparameters
+import optuna
 
 from pdb import set_trace as bp
 
 
-def main():
-    #_ = torch.manual_seed(hp.torch_seed)
-
+def objective(trial):
+    hp = Hyperparameters(trial)
+    print(trial.params)    
+    
     # Load data
     print('Load data...')
-    data = np.load(hp.data_pp_dir + 'data_arrays.npz')
+    data = np.load(hp.data_pp_dir + 'data_arrays_' + hp.gender + '.npz')
     
     x_trn = data['x_trn']
     time_trn = data['time_trn']
@@ -54,9 +56,11 @@ def main():
     case_idx_val = data['case_idx_val']
     max_idx_control_val = data['max_idx_control_val']
     
-    df_index_code = feather.read_dataframe(hp.data_pp_dir + 'df_index_code.feather')
+    df_index_code = feather.read_dataframe(hp.data_pp_dir + 'df_index_code_' + hp.gender + '.feather')
     
     ####################################################################################################### 
+
+    _ = torch.manual_seed(hp.torch_seed)
 
     print('Create data loaders and tensors...')
     case_trn = utils.TensorDataset(torch.from_numpy(x_trn[case_idx_trn]),
@@ -85,28 +89,45 @@ def main():
 
     print('Train...')
     # Neural Net
-    n_inputs = x_trn.shape[1]+1 if hp.nonprop_hazards else x_trn.shape[1]
-    net = NetAttention(n_inputs, df_index_code.shape[0]+1, hp).to(hp.device) #+1 for zero padding
+    hp.model_name = str(trial.number) + '_' + hp.model_name 
+    num_input = x_trn.shape[1]+1 if hp.nonprop_hazards else x_trn.shape[1]
+    net = NetRNN(num_input, df_index_code.shape[0]+1, hp).to(hp.device) #+1 for zero padding
     criterion = CoxPHLoss().to(hp.device)
-    optimizer = optim.Adam(net.parameters(), lr=1e-2)
+    optimizer = optim.Adam(net.parameters(), lr=hp.learning_rate)
     
-    best, num_bad_epochs = 1e10, 0
+    best, num_bad_epochs = 100., 0
     for epoch in range(hp.max_epochs):
-        # print(epoch)
         trn(trn_loader, x_trn, codes_trn, month_trn, diagt_trn, net, criterion, optimizer, hp)
         loss_val = val(val_loader, x_val, codes_val, month_val, diagt_val, net, criterion, epoch, hp)
         # early stopping
         if loss_val < best:
             print('############### Saving good model ###############################')
-            torch.save(net.state_dict(), hp.data_dir + 'log/' + hp.model_name)
+            torch.save(net.state_dict(), hp.log_dir + hp.model_name)
             best = loss_val
             num_bad_epochs = 0
         else:
             num_bad_epochs += 1
             if num_bad_epochs == hp.patience:
                 break
+        # pruning
+        trial.report(best, epoch)
+        if trial.should_prune():
+            raise optuna.TrialPruned()
 
     print('Done')
+    return best
+
+
+def main():
+    study = optuna.create_study(sampler=optuna.samplers.TPESampler(seed=10), pruner=optuna.pruners.SuccessiveHalvingPruner())
+    study.optimize(objective, timeout=2*60*60)
+    study.best_params
+    save_obj(study)
+    
+    #objective(optuna.trial.FixedTrial({'summarize': 'output_avg'}))
+    
+    bp()
+
 
 if __name__ == '__main__':
     main()
