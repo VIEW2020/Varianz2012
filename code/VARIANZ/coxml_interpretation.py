@@ -130,9 +130,9 @@ def main():
         log_hr_embeddings[i, 2] = uCI
     
     # Compute HRs
-    df_index_code['HR'] = np.exp(log_hr_embeddings[i, 0])
-    df_index_code['lCI'] = np.exp(log_hr_embeddings[i, 1])
-    df_index_code['uCI'] = np.exp(log_hr_embeddings[i, 2])
+    df_index_code['HR'] = np.exp(log_hr_embeddings[:, 0])
+    df_index_code['lCI'] = np.exp(log_hr_embeddings[:, 1])
+    df_index_code['uCI'] = np.exp(log_hr_embeddings[:, 2])
     
     # Keep only codes existing as primary
     #primary_codes = feather.read_dataframe(hp.data_pp_dir + 'primary_codes.feather')
