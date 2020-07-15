@@ -32,6 +32,7 @@ from pdb import set_trace as bp
 
 def objective(trial, data, df_index_code):
     hp = Hyperparameters(trial)
+    #hp = Hyperparameters()
     print(trial.params)
     
     x_trn = data['x_trn']
@@ -121,10 +122,10 @@ def main():
     
     print('Begin study...')
     study = optuna.create_study(sampler=optuna.samplers.TPESampler(seed=10), pruner=optuna.pruners.SuccessiveHalvingPruner())
-    study.optimize(lambda trial: objective(trial, data, df_index_code), n_trials=1)
+    study.optimize(lambda trial: objective(trial, data, df_index_code), n_trials=100)
     
-    save_obj(study, 'study')
-    bp()
+    print('Save...')
+    save_obj(study, pp.log_dir + 'study_' + pp.gender + '.pkl')
 
 if __name__ == '__main__':
     main()

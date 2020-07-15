@@ -52,9 +52,14 @@ class NetRNN(nn.Module):
         layers.append(nn.Linear(fc_size, 1))
         self.mlp = nn.Sequential(*layers)        
 
-    def forward(self, x, code, month, diagt, time=None):
+    def forward(self, x, code, month, diagt, time=None, mask=None):
         if self.nonprop_hazards and (time is not None):
             x = torch.cat((x, time), dim=-1)
+        seq_length = (code>0).sum(dim=-1)
+        if mask is not None:
+            code = code * ~mask
+            month = month * ~mask
+            diagt = diagt * ~mask
         # Embedding layers ################################################################################################################
         embedded = self.embed_codes(code.long())
         if self.add_diagt:
@@ -64,7 +69,6 @@ class NetRNN(nn.Module):
         elif self.add_month == 'concat':
             embedded = torch.cat((embedded, (month/float(self.num_months_hx)).unsqueeze(dim=-1)), dim=-1)
         # RNN #############################################################################################################################
-        seq_length = (code>0).sum(dim=-1)
         packed = nn.utils.rnn.pack_padded_sequence(embedded, seq_length.clamp(min=1), batch_first = True, enforce_sorted = False)
         if self.rnn_type == 'LSTM':
             output, (hidden, _) = self.rnn(packed)

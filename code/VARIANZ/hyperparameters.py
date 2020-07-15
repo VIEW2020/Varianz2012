@@ -59,7 +59,7 @@ class Hyperparameters:
             self.summarize = trial.suggest_categorical('summarize', ['hidden', 'output_max', 'output_sum', 'output_avg'])
             self.learning_rate = trial.suggest_categorical('learning_rate', [1e-4, 1e-3, 1e-2])
         else:
-            self.nonprop_hazards = True
+            self.nonprop_hazards = False
             self.embedding_dim = 16
             self.rnn_type = 'GRU'
             self.num_rnn_layers = 1
@@ -72,4 +72,4 @@ class Hyperparameters:
         
         ### Evaluation ######################################################
         
-        self.sample_comp_bh = 10000
+        self.test_model = '0_20200714_125710_083059.pt'

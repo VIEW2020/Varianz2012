@@ -5,8 +5,6 @@ https://www.github.com/sebbarb/
 '''
 
 import sys
-#sys.path.append('E:/Libraries/Python/')
-#sys.path.append('..\\lib\\')
 sys.path.append('../lib/')
 
 import numpy as np
@@ -23,13 +21,9 @@ import torch.utils.data as utils
 import torch.optim as optim
 import torch.nn.functional as F
 
-from pycox.evaluation import EvalSurv
-from pycox.models import CoxCC, CoxTime
-
 from deep_survival import *
-from hyperparameters import Hyperparameters as hp
-
-from os import listdir
+from rnn_models import *
+from hyperparameters import Hyperparameters
 
 import statsmodels.stats.api as sms
 import matplotlib.pyplot as plt
@@ -40,7 +34,11 @@ from pdb import set_trace as bp
 def main():
     # Load data
     print('Load data...')
+    hp = Hyperparameters()
+    data = np.load(hp.data_pp_dir + 'data_arrays_' + hp.gender + '.npz')
     df_index_code = feather.read_dataframe(hp.data_pp_dir + 'df_index_code_' + hp.gender + '.feather')
+    
+    print('Create list of codes...')
     pharm_lookup = feather.read_dataframe(hp.data_dir + 'CURRENT_VIEW_PHARMS_LOOKUP.feather')
     icd10_lookup = feather.read_dataframe(hp.data_dir + 'CURRENT_ICD10_ALL_LOOKUP.feather')
 
@@ -56,53 +54,85 @@ def main():
     icd10_lookup.drop_duplicates(subset='CODE', inplace=True)
     icd10_lookup['TYPE'] = 1
     
+    print('Merge with lookup table...')
     lookup = pd.concat([pharm_lookup, icd10_lookup], ignore_index=True, sort=False)
-    
-    print('Merge...')
     df_index_code['CODE'] = df_index_code['CODE'].astype(str)
     df_index_code = df_index_code.merge(lookup,   how='left', on=['CODE', 'TYPE'])
-    n_embeddings = df_index_code.shape[0]
+    num_embeddings = df_index_code.shape[0]
+    
+    print('Concat train/val/test data...')
+    x = np.concatenate((data['x_trn'], data['x_val'], data['x_tst']))
+    time = np.concatenate((data['time_trn'], data['time_val'], data['time_tst']))
+    codes = np.concatenate((data['codes_trn'], data['codes_val'], data['codes_tst']))
+    month = np.concatenate((data['month_trn'], data['month_val'], data['month_tst']))
+    diagt = np.concatenate((data['diagt_trn'], data['diagt_val'], data['diagt_tst']))
+    
+    print('Create data loader...')
+    data_tensors = utils.TensorDataset(torch.from_numpy(x), torch.from_numpy(time), torch.from_numpy(codes), torch.from_numpy(month), torch.from_numpy(diagt))
+    data_loader = utils.DataLoader(data_tensors, batch_size = hp.batch_size, shuffle = False,  drop_last = False)
 
-    print('Add standard columns...')
-    cols_list = load_obj(hp.data_pp_dir + 'cols_list.pkl')
-    n_cols = len(cols_list)
-    df_cols = pd.DataFrame({'TYPE': 2, 'DESCRIPTION': cols_list})
-    df_index_code = pd.concat([df_cols, df_index_code], sort=False)
+    #print('Add standard columns...')
+    #cols_list = load_obj(hp.data_pp_dir + 'cols_list.pkl')
+    #num_cols = len(cols_list)
+    #df_cols = pd.DataFrame({'TYPE': 2, 'DESCRIPTION': cols_list})
+    #df_index_code = pd.concat([df_cols, df_index_code], sort=False)
 
     #######################################################################################################
         
     print('Compute HRs...')
     
-    # Trained models
-    models = listdir(hp.data_dir + 'mincount300/log_' + hp.gender + '/')
-    log_hr_columns = np.zeros((n_cols, len(models)))
-    log_hr_embeddings = np.zeros((n_embeddings, len(models)))
+    # Trained model
+    #log_hr_columns = np.zeros((num_cols, len(models)))
+    log_hr_embeddings = np.zeros((num_embeddings, 3))
 
     # Neural Net
-    net = NetAttention(n_cols, n_embeddings+1, hp) #+1 for zero padding
+    num_input = x.shape[1]+1 if hp.nonprop_hazards else x.shape[1]
+    net = NetRNN(num_input, num_embeddings+1, hp).to(hp.device) #+1 for zero padding
+    net.load_state_dict(torch.load(hp.log_dir + hp.test_model, map_location=hp.device))
+    
+    # Compute risk for everyone
+    risk = np.zeros(x.shape[0])
+    net.eval()
+    with torch.no_grad():
+        for batch_idx, (x_b, time_b, code_b, month_b, diagt_b) in enumerate(tqdm(data_loader)):
+            x_b = x_b.to(hp.device)
+            time_b = time_b.to(hp.device)
+            code_b = code_b.to(hp.device)
+            month_b = month_b.to(hp.device)
+            diagt_b = diagt_b.to(hp.device)
+            risk[(batch_idx*hp.batch_size):min((batch_idx+1)*hp.batch_size, risk.shape[0])] = net(x_b, code_b, month_b, diagt_b, time_b).detach().cpu().numpy().squeeze()
 
-    for i in range(len(models)):
+    # Compute risk for masked embeddings
+    #for i in tqdm(range(num_embeddings)):
+    for i in tqdm(range(3)):
         print('HRs for model {}'.format(i))
-        
-        # Restore variables from disk
-        net.load_state_dict(torch.load(hp.data_dir + 'mincount300/log_' + hp.gender + '/' + models[i], map_location=hp.device))
-        
-        # HRs
-        emb_weight = net.embed_codes.weight # primary diagnostic codes
-        emb_weight = emb_weight[1:,:]
-        fc_weight = net.fc.weight[:,n_cols:].t()
+        mask = (codes==(i+1))
+        idx = mask.max(axis=1)
+        x_red, time_red, codes_red, month_red, diagt_red, risk_red, mask_red = x[idx], time[idx], codes[idx], month[idx], diagt[idx], risk[idx], mask[idx]
+        data_tensors_red = utils.TensorDataset(torch.from_numpy(x_red), torch.from_numpy(time_red), torch.from_numpy(codes_red), torch.from_numpy(month_red), torch.from_numpy(diagt_red), torch.from_numpy(mask_red))
+        data_loader_red = utils.DataLoader(data_tensors_red, batch_size = hp.batch_size, shuffle = False,  drop_last = False)
+        risk_masked = np.zeros_like(risk_red)
+        with torch.no_grad():
+            for batch_idx, (x_b, time_b, code_b, month_b, diagt_b, mask_b) in enumerate(tqdm(data_loader_red)):
+                x_b = x_b.to(hp.device)
+                time_b = time_b.to(hp.device)
+                code_b = code_b.to(hp.device)
+                month_b = month_b.to(hp.device)
+                diagt_b = diagt_b.to(hp.device)
+                mask_b = mask_b.to(hp.device)
+                risk_masked[(batch_idx*hp.batch_size):min((batch_idx+1)*hp.batch_size, risk_masked.shape[0])] = net(x_b, code_b, month_b, diagt_b, time_b, mask_b).detach().cpu().numpy().squeeze()
+        diff = risk_red - risk_masked
         
         # Store
-        log_hr_columns[:, i] = net.fc.weight[:,0:n_cols].detach().cpu().numpy().squeeze()
-        log_hr_embeddings[:, i] = torch.matmul(emb_weight, fc_weight).detach().cpu().numpy().squeeze()
+        log_hr_embeddings[i, 0] = diff.mean()
+        lCI, uCI = sms.DescrStatsW(diff).tconfint_mean()
+        log_hr_embeddings[i, 1] = lCI
+        log_hr_embeddings[i, 2] = uCI
     
     # Compute HRs
-    log_hr_matrix = np.concatenate((log_hr_columns, log_hr_embeddings))
-    mean_hr = np.exp(log_hr_matrix.mean(axis=1))
-    lCI, uCI = np.exp(sms.DescrStatsW(log_hr_matrix.transpose()).tconfint_mean())
-    df_index_code['HR'] = mean_hr
-    df_index_code['lCI'] = lCI
-    df_index_code['uCI'] = uCI
+    df_index_code['HR'] = np.exp(log_hr_embeddings[i, 0])
+    df_index_code['lCI'] = np.exp(log_hr_embeddings[i, 1])
+    df_index_code['uCI'] = np.exp(log_hr_embeddings[i, 2])
     
     # Keep only codes existing as primary
     #primary_codes = feather.read_dataframe(hp.data_pp_dir + 'primary_codes.feather')
@@ -110,7 +140,7 @@ def main():
     
     # Save
     df_index_code.sort_values(by=['TYPE', 'lCI'], ascending=False, inplace=True)
-    df_index_code.to_csv(hp.data_dir + 'mincount300/hr_' + hp.gender + '.csv', index=False)
+    df_index_code.to_csv(hp.data_dir + 'hr_' + hp.gender + '.csv', index=False)
     
     # Plot
     # hr_diagt = np.exp(log_hr_dt_mat)
