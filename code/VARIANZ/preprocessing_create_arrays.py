@@ -4,6 +4,9 @@ s.barbieri@unsw.edu.au
 https://www.github.com/sebbarb/
 '''
 
+import sys
+sys.path.append('../lib/')
+
 import feather
 import pandas as pd
 import numpy as np
