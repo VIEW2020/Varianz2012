@@ -93,7 +93,7 @@ def main():
         for col in df.columns.values.tolist():
             if col != 'TIME' and col !='EVENT' and col !='VSIMPLE_INDEX_MASTER' and col !='gender_code':
                 cols_list.append(col)
-        x_trn, x_val, x_tst = df_trn[cols_list].values, df_val[cols_list].values, df_tst[cols_list].values
+        x_trn, x_val, x_tst = df_trn[cols_list].values.astype('float32'), df_val[cols_list].values.astype('float32'), df_tst[cols_list].values.astype('float32')
         
         time_trn, time_val, time_tst = df_trn['TIME'].values, df_val['TIME'].values, df_tst['TIME'].values
         event_trn, event_val, event_tst = df_trn['EVENT'].values, df_val['EVENT'].values, df_tst['EVENT'].values
