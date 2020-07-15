@@ -87,6 +87,16 @@ def main():
         print('Split data into train/validate/test...')
         df_trn, df_tst = train_test_split(df, test_size=0.1, train_size=0.8, shuffle=True, stratify=df['EVENT'])
         df_val = df.drop(df_trn.index).drop(df_tst.index)
+
+        # Arrays
+        cols_list = []
+        for col in df.columns.values.tolist():
+            if col != 'TIME' and col !='EVENT' and col !='VSIMPLE_INDEX_MASTER' and col !='gender_code':
+                cols_list.append(col)
+        x_trn, x_val, x_tst = df_trn[cols_list].values, df_val[cols_list].values, df_tst[cols_list].values
+        
+        time_trn, time_val, time_tst = df_trn['TIME'].values, df_val['TIME'].values, df_tst['TIME'].values
+        event_trn, event_val, event_tst = df_trn['EVENT'].values, df_val['EVENT'].values, df_tst['EVENT'].values
         
         codes_trn, codes_val, codes_tst = codes[df_trn.index], codes[df_val.index], codes[df_tst.index]
         month_trn, month_val, month_tst = month[df_trn.index], month[df_val.index], month[df_tst.index]

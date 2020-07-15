@@ -103,8 +103,8 @@ def main():
             risk[(batch_idx*hp.batch_size):min((batch_idx+1)*hp.batch_size, risk.shape[0])] = net(x_b, code_b, month_b, diagt_b, time_b).detach().cpu().numpy().squeeze()
 
     # Compute risk for masked embeddings
-    #for i in tqdm(range(num_embeddings)):
-    for i in tqdm(range(5)):
+    for i in tqdm(range(num_embeddings)):
+    #for i in tqdm(range(3)):
         print('HRs for model {}'.format(i))
         mask = (codes==(i+1))
         idx = mask.max(axis=1)
@@ -125,6 +125,7 @@ def main():
         
         # Store
         log_hr_embeddings[i, 0] = diff.mean()
+        #lCI, uCI = sms.DescrStatsW(diff).tconfint_mean()
         log_hr_embeddings[i, 1] = np.quantile(diff, 0.025)
         log_hr_embeddings[i, 2] = np.quantile(diff, 0.975)
     
