@@ -32,7 +32,7 @@ from pdb import set_trace as bp
 
 def objective(trial, data, df_index_code):
     hp = Hyperparameters(trial)
-    #hp = Hyperparameters()
+    # hp = Hyperparameters()
     print(trial.params)
     
     x_trn = data['x_trn']
