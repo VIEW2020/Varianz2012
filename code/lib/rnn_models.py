@@ -35,7 +35,7 @@ class NetRNN(nn.Module):
         if self.add_month == 'embedding':
             self.embed_month = nn.Embedding(num_embeddings = hp.num_months_hx, embedding_dim = hp.embedding_dim, padding_idx = 0)
         if self.add_diagt:
-            self.embed_diagt = nn.Embedding(num_embeddings = 4, embedding_dim = hp.embedding_dim, padding_idx = 0)
+            self.embed_diagt = nn.Embedding(num_embeddings = 5, embedding_dim = hp.embedding_dim, padding_idx = 0)
         # RNN #############################################################################################################################
         if self.add_month == 'concat':
             self.embedding_dim = self.embedding_dim + 1

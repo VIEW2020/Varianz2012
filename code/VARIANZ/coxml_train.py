@@ -31,8 +31,8 @@ from pdb import set_trace as bp
 
 
 def objective(trial, data, df_index_code):
-    hp = Hyperparameters(trial)
-    # hp = Hyperparameters()
+    # hp = Hyperparameters(trial)
+    hp = Hyperparameters()
     print(trial.params)
     
     x_trn = data['x_trn']
@@ -55,7 +55,7 @@ def objective(trial, data, df_index_code):
     
     ####################################################################################################### 
 
-    _ = torch.manual_seed(hp.torch_seed)
+    #_ = torch.manual_seed(hp.torch_seed)
 
     print('Create data loaders and tensors...')
     case_trn = utils.TensorDataset(torch.from_numpy(x_trn[case_idx_trn]),
@@ -121,8 +121,9 @@ def main():
     df_index_code = feather.read_dataframe(pp.data_pp_dir + 'df_index_code_' + pp.gender + '.feather')
     
     print('Begin study...')
-    study = optuna.create_study(sampler=optuna.samplers.TPESampler(seed=10), pruner=optuna.pruners.SuccessiveHalvingPruner())
-    study.optimize(lambda trial: objective(trial, data, df_index_code), n_trials=100)
+    # study = optuna.create_study(sampler=optuna.samplers.TPESampler(), pruner=optuna.pruners.SuccessiveHalvingPruner())
+    study = optuna.create_study()
+    study.optimize(lambda trial: objective(trial, data, df_index_code), n_trials=30)
     
     print('Save...')
     save_obj(study, pp.log_dir + 'study_' + pp.gender + '.pkl')

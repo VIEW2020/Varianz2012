@@ -59,16 +59,16 @@ class Hyperparameters:
             self.summarize = trial.suggest_categorical('summarize', ['hidden', 'output_max', 'output_sum', 'output_avg'])
             self.learning_rate = trial.suggest_categorical('learning_rate', [1e-4, 1e-3, 1e-2])
         else:
-            self.nonprop_hazards = True
+            self.nonprop_hazards = False
             self.embedding_dim = 32
-            self.rnn_type = 'LSTM'
-            self.num_rnn_layers = 2
-            self.dropout = 0.2
-            self.num_mlp_layers = 2
+            self.rnn_type = 'GRU'
+            self.num_rnn_layers = 3
+            self.dropout = 0.1
+            self.num_mlp_layers = 1
             self.add_diagt = True
             self.add_month = 'concat'
-            self.summarize = 'hidden'
-            self.learning_rate = 1e-4
+            self.summarize = 'output_max'
+            self.learning_rate = 1e-2
         
         ### Evaluation ######################################################
         

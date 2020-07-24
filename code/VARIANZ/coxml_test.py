@@ -27,7 +27,8 @@ from pycox.evaluation import EvalSurv
 from pycox.models import CoxCC, CoxTime
 
 from deep_survival import *
-from hyperparameters import Hyperparameters as hp
+from utils import *
+from hyperparameters import Hyperparameters
 
 from os import listdir
 
@@ -35,6 +36,29 @@ from pdb import set_trace as bp
 
 
 def main():
+    hp = Hyperparameters()
+    study_males = load_obj(hp.data_dir + 'log_males_iter0/study_males.pkl')
+    print(study_males.best_params)
+    print(study_males.best_value)
+    study_females = load_obj(hp.data_dir + 'log_females_iter0/study_females.pkl')
+    print(study_females.best_params)
+    print(study_females.best_value)
+    study_males = load_obj(hp.data_dir + 'log_males_iter1/study_males.pkl')
+    print(study_males.best_params)
+    print(study_males.best_value)    
+    study_females = load_obj(hp.data_dir + 'log_females_iter1/study_females.pkl')
+    print(study_females.best_params)
+    print(study_females.best_value)    
+    study_males = load_obj(hp.data_dir + 'log_males_iter2/study_males.pkl')
+    print(study_males.best_params)
+    print(study_males.best_value)    
+    study_females = load_obj(hp.data_dir + 'log_females_iter2/study_females.pkl')
+    print(study_females.best_params)
+    print(study_females.best_value)
+    bp()
+
+    return
+
     # Load data
     print('Load data...')
     data = np.load(hp.data_pp_dir + 'data_arrays_' + hp.gender + '.npz')
