@@ -174,8 +174,7 @@ def main():
 
     # Compute risk for masked embeddings
     for i in tqdm(range(num_embeddings)):
-    # for i in tqdm(range(3)):
-        print('HRs for model {}'.format(i))
+        print('HRs for embedding {}'.format(i))
         mask = (codes==(i+1))
         idx = mask.max(axis=1)
         x_red, time_red, codes_red, month_red, diagt_red, risk_red, mask_red = x[idx], time[idx], codes[idx], month[idx], diagt[idx], risk[idx], mask[idx]

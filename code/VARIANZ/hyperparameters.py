@@ -68,8 +68,8 @@ class Hyperparameters:
             self.add_diagt = True
             self.add_month = 'concat'
             self.summarize = 'output_max'
-            self.learning_rate = 1e-2
+            self.learning_rate = 1e-3
         
         ### Evaluation ######################################################
         
-        self.test_model = '0_20200714_125710_083059.pt'
+        self.test_model = 'final_' + self.gender + '.pt'

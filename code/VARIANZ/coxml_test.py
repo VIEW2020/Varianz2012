@@ -37,27 +37,6 @@ from pdb import set_trace as bp
 
 def main():
     hp = Hyperparameters()
-    study_males = load_obj(hp.data_dir + 'log_males_iter0/study_males.pkl')
-    print(study_males.best_params)
-    print(study_males.best_value)
-    study_females = load_obj(hp.data_dir + 'log_females_iter0/study_females.pkl')
-    print(study_females.best_params)
-    print(study_females.best_value)
-    study_males = load_obj(hp.data_dir + 'log_males_iter1/study_males.pkl')
-    print(study_males.best_params)
-    print(study_males.best_value)    
-    study_females = load_obj(hp.data_dir + 'log_females_iter1/study_females.pkl')
-    print(study_females.best_params)
-    print(study_females.best_value)    
-    study_males = load_obj(hp.data_dir + 'log_males_iter2/study_males.pkl')
-    print(study_males.best_params)
-    print(study_males.best_value)    
-    study_females = load_obj(hp.data_dir + 'log_females_iter2/study_females.pkl')
-    print(study_females.best_params)
-    print(study_females.best_value)
-    bp()
-
-    return
 
     # Load data
     print('Load data...')
@@ -116,32 +95,6 @@ def main():
 
     df_tst['RISK'] = df_tst.filter(like='RISK').mean(axis=1)
     df_tst.to_feather(hp.plot_dir + 'df_tst_cml_' + hp.gender + '.feather')
-
-    ## Prediction
-    #print('Predicting survival...')
-    #model = CoxTime(net, labtrans=labtrans) if hp.nonprop_hazards else CoxCC(net)
-    #model.compute_baseline_hazards((torch.from_numpy(x_trn).flip(0),
-                                    #torch.from_numpy(codes_trn).flip(0), 
-                                    #torch.from_numpy(month_trn).flip(0),
-                                    #torch.from_numpy(diagt_trn).flip(0)),
-                                    #(torch.from_numpy(time_trn).flip(0), 
-                                    #torch.from_numpy(event_trn).flip(0)),
-                                    #sample=hp.sample_comp_bh, batch_size=hp.batch_size)
-    #surv = model.predict_surv_df((x_tst, codes_tst, month_tst, diagt_tst), batch_size=hp.batch_size)
-    
-    ## Evaluation
-    #print('Evaluating...')
-    #ev = EvalSurv(surv, time_tst, event_tst, censor_surv='km')
-    #concordance = ev.concordance_td()
-    #print('Concordance: {:.6f}'.format(concordance))
-    #time_grid = np.linspace(time_tst.min(), time_tst.max(), 100)
-    #brier = ev.integrated_brier_score(time_grid)
-    #print('Brier score: {:.6f}'.format(brier))
-    #nbll = ev.integrated_nbll(time_grid)
-    #print('NBLL: {:.6f}'.format(nbll))
-    
-    ## Log
-    #log(models[i], concordance, brier, nbll, hp) 
 
 if __name__ == '__main__':
     main()

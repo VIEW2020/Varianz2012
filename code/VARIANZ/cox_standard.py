@@ -5,19 +5,19 @@ https://www.github.com/sebbarb/
 '''
 
 import sys
-#sys.path.append('..\lib\\')
 sys.path.append('../lib/')
 
 import numpy as np
 import pandas as pd
 from deep_survival import *
+from utils import *
 import feather
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn_pandas import DataFrameMapper
 from pycox.evaluation import EvalSurv
 from lifelines import CoxPHFitter
-from hyperparameters import Hyperparameters as hp
+from hyperparameters import Hyperparameters
 from sklearn import preprocessing
 import lifelines
 
@@ -27,6 +27,7 @@ from pdb import set_trace as bp
 def main():
     # Load data
     print('Load data...')
+    hp = Hyperparameters()
     data = np.load(hp.data_pp_dir + 'data_arrays_' + hp.gender + '.npz')
     x_trn = data['x_trn']
     time_trn = data['time_trn']
@@ -41,17 +42,17 @@ def main():
     df['TIME'] = time_trn
     df['EVENT'] = event_trn 
 
-    #for  relevant_code in [1137]:
+    for  relevant_code in [902]:
     ##for relevant_code in [499,652,1489,736,1043,1623,1008,1137,1042,498,696,1138,1403,1665,1677,770,623,1355,923,1579,1612,1172]:
-        #relevant_code_present = (codes_trn == relevant_code).max(axis=1)
-        #print('N codes: {}'.format(sum(relevant_code_present)))
+        relevant_code_present = (codes_trn == relevant_code).max(axis=1)
+        print('N codes: {}'.format(sum(relevant_code_present)))
         
-        #event_relevant_code    = event_trn[relevant_code_present]
-        #event_no_relevant_code = event_trn[~relevant_code_present]
-        #OR = (sum(event_relevant_code)/sum(~event_relevant_code))/(sum(event_no_relevant_code)/sum(~event_no_relevant_code))
-        #print('OR: {}'.format(OR))
+        event_relevant_code    = event_trn[relevant_code_present]
+        event_no_relevant_code = event_trn[~relevant_code_present]
+        OR = (sum(event_relevant_code)/sum(~event_relevant_code))/(sum(event_no_relevant_code)/sum(~event_no_relevant_code))
+        print('OR: {}'.format(OR))
     
-    #df['CODE'] = relevant_code_present.astype(int)
+    df['CODE'] = relevant_code_present.astype(int)
 
     ###################################################################
     print('Fitting...')
@@ -59,6 +60,8 @@ def main():
     cph.fit(df, duration_col='TIME', event_col='EVENT', show_progress=True, step_size=0.5)
     cph.print_summary()
     print('done')
+    
+    return
     
     ##Evaluation
     #surv = cph.predict_survival_function(x_tst)
