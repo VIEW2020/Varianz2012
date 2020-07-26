@@ -122,7 +122,7 @@ def main():
     
     print('Begin study...')
     # study = optuna.create_study(sampler=optuna.samplers.TPESampler(), pruner=optuna.pruners.SuccessiveHalvingPruner())
-    study = optuna.create_study()
+    study = optuna.create_study(pruner=optuna.pruners.NopPruner())
     study.optimize(lambda trial: objective(trial, data, df_index_code), n_trials=30)
     
     print('Save...')
