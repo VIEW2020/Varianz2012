@@ -31,7 +31,7 @@ class NetRNN(nn.Module):
         self.embedding_dim = hp.embedding_dim
         self.summarize = hp.summarize
         # Embedding layers ################################################################################################################
-        self.embed_codes = nn.Embedding(num_embeddings = num_embeddings,   embedding_dim = hp.embedding_dim, padding_idx = 0)
+        self.embed_codes = nn.Embedding(num_embeddings = num_embeddings, embedding_dim = hp.embedding_dim, padding_idx = 0)
         if self.add_month == 'embedding':
             self.embed_month = nn.Embedding(num_embeddings = hp.num_months_hx, embedding_dim = hp.embedding_dim, padding_idx = 0)
         if self.add_diagt:
@@ -52,14 +52,12 @@ class NetRNN(nn.Module):
         layers.append(nn.Linear(fc_size, 1))
         self.mlp = nn.Sequential(*layers)        
 
-    def forward(self, x, code, month, diagt, time=None, mask=None):
+    def forward(self, x, code, month, diagt, time=None, seq_length=None):
+        bp()
         if self.nonprop_hazards and (time is not None):
             x = torch.cat((x, time), dim=-1)
-        seq_length = (code>0).sum(dim=-1)
-        if mask is not None:
-            code = code * ~mask
-            month = month * ~mask
-            diagt = diagt * ~mask
+        if seq_length is None:
+            seq_length = (code>0).sum(dim=-1)
         # Embedding layers ################################################################################################################
         embedded = self.embed_codes(code.long())
         if self.add_diagt:
@@ -67,7 +65,7 @@ class NetRNN(nn.Module):
         if self.add_month == 'embedding':
             embedded = embedded + self.embed_month(month.long())
         elif self.add_month == 'concat':
-            embedded = torch.cat((embedded, (month/float(self.num_months_hx)).unsqueeze(dim=-1)), dim=-1)
+            embedded = torch.cat((embedded, (month/float(self.num_months_hx)).unsqueeze(dim=-1)), dim=-1)            
         # RNN #############################################################################################################################
         packed = nn.utils.rnn.pack_padded_sequence(embedded, seq_length.clamp(min=1), batch_first = True, enforce_sorted = False)
         if self.rnn_type == 'LSTM':
@@ -93,3 +91,48 @@ class NetRNN(nn.Module):
         x = torch.cat((x, summary_0, summary_1), dim=-1)
         x = self.mlp(x)
         return x
+
+
+class NetRNN_Interpret(nn.Module):
+    def __init__(self, num_input, num_embeddings, hp):
+        super(NetRNN_Interpret, self).__init__()
+        # Parameters ######################################################################################################################
+        self.num_months_hx = hp.num_months_hx
+        self.embedding_dim = hp.embedding_dim
+        # Embedding layers ################################################################################################################
+        self.embed_codes = nn.Embedding(num_embeddings = num_embeddings, embedding_dim = hp.embedding_dim, padding_idx = 0)
+        self.embed_diagt = nn.Embedding(num_embeddings = 5, embedding_dim = hp.embedding_dim, padding_idx = 0)
+        # RNN #############################################################################################################################
+        self.embedding_dim = self.embedding_dim + 1
+        self.rnn =  GRU(input_size = self.embedding_dim, hidden_size = self.embedding_dim, num_layers = hp.num_rnn_layers, batch_first = True, dropout = hp.dropout, bidirectional = True)
+        # Fully connected layers ##########################################################################################################
+        fc_size = num_input + 2*self.embedding_dim
+        layers = []
+        layers.append(nn.Linear(fc_size, fc_size))
+        layers.append(nn.ELU())
+        layers.append(nn.Linear(fc_size, 1))
+        self.mlp = nn.Sequential(*layers)        
+
+    def forward(self, x, code, month, diagt, seq_length=None):
+        if seq_length is None:
+            seq_length = (code>0).sum(dim=-1)
+        # Embedding layers ################################################################################################################
+        embedded = self.embed_codes(code)
+        embedded = embedded + self.embed_diagt(diagt)
+        embedded = torch.cat((embedded, (month/float(self.num_months_hx)).unsqueeze(dim=-1)), dim=-1)            
+        # RNN #############################################################################################################################
+        packed = nn.utils.rnn.pack_padded_sequence(embedded, seq_length.clamp(min=1), batch_first = True, enforce_sorted = False)
+        output, _ = self.rnn(packed)
+        output, _ = nn.utils.rnn.pad_packed_sequence(output, batch_first=True)
+        output = output.view(-1, seq_length.max(), 2, self.embedding_dim) # view(batch, seq_len, num_directions, hidden_size)
+        output, _ = output.max(dim=1)
+        output.masked_fill_((seq_length == 0).view(-1, 1, 1), 0)
+        summary_0, summary_1 = output[:,0,:], output[:,1,:]
+        # Fully connected layers ##########################################################################################################    
+        x = torch.cat((x, summary_0, summary_1), dim=-1)
+        x = self.mlp(x)
+        return x
+
+
+
+
