@@ -72,4 +72,5 @@ class Hyperparameters:
         
         ### Evaluation ######################################################
         
+        self.attribution_alg = 'integrated_gradients' # integrated_gradients, gradient_shap, deeplift, inputxgradient
         self.test_model = 'final_' + self.gender + '.pt'
