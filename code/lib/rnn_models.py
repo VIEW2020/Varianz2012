@@ -53,7 +53,6 @@ class NetRNN(nn.Module):
         self.mlp = nn.Sequential(*layers)        
 
     def forward(self, x, code, month, diagt, time=None, seq_length=None):
-        bp()
         if self.nonprop_hazards and (time is not None):
             x = torch.cat((x, time), dim=-1)
         if seq_length is None:
@@ -78,7 +77,7 @@ class NetRNN(nn.Module):
             summary_0, summary_1 = hidden[0], hidden[1]
         else:
             output, _ = nn.utils.rnn.pad_packed_sequence(output, batch_first=True)
-            output = output.view(-1, seq_length.max(), 2, self.embedding_dim) # view(batch, seq_len, num_directions, hidden_size)
+            output = output.view(-1, max(1, seq_length.max()), 2, self.embedding_dim) # view(batch, seq_len, num_directions, hidden_size)
             if self.summarize == 'output_max':
                 output, _ = output.max(dim=1)
             elif self.summarize == 'output_sum':
@@ -124,7 +123,7 @@ class NetRNN_Interpret(nn.Module):
         packed = nn.utils.rnn.pack_padded_sequence(embedded, seq_length.clamp(min=1), batch_first = True, enforce_sorted = False)
         output, _ = self.rnn(packed)
         output, _ = nn.utils.rnn.pad_packed_sequence(output, batch_first=True)
-        output = output.view(-1, seq_length.max(), 2, self.embedding_dim) # view(batch, seq_len, num_directions, hidden_size)
+        output = output.view(-1, max(1, seq_length.max()), 2, self.embedding_dim) # view(batch, seq_len, num_directions, hidden_size)
         output, _ = output.max(dim=1)
         output.masked_fill_((seq_length == 0).view(-1, 1, 1), 0)
         summary_0, summary_1 = output[:,0,:], output[:,1,:]
