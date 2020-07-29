@@ -40,8 +40,15 @@ def main():
     print('Remove codes associated with less than min_count persons...')
     df_males = df_males[df_males.groupby('CLIN_CD_10')['VSIMPLE_INDEX_MASTER'].transform('nunique') >= hp.min_count]
     df_females = df_females[df_females.groupby('CLIN_CD_10')['VSIMPLE_INDEX_MASTER'].transform('nunique') >= hp.min_count]
+
+    print('Most frequent diag type...')
+    most_freq_diagt_males = df_males.groupby(['CLIN_CD_10'])['DIAG_TYPE'].agg(lambda x: pd.Series.mode(x)[0]).to_frame().reset_index()
+    most_freq_diagt_females = df_females.groupby(['CLIN_CD_10'])['DIAG_TYPE'].agg(lambda x: pd.Series.mode(x)[0]).to_frame().reset_index()
     
     print('Save...')
+    most_freq_diagt_males.to_feather(hp.data_pp_dir + 'most_freq_diagt_males.feather')
+    most_freq_diagt_females.to_feather(hp.data_pp_dir + 'most_freq_diagt_females.feather')  
+    
     df_males.sort_values(by=['VSIMPLE_INDEX_MASTER', 'dispmonth_index', 'CLIN_CD_10'], ascending=True, inplace=True)
     df_males.reset_index(drop=True, inplace=True)
     df_males.to_feather(hp.data_pp_dir + 'HE_pp_males.feather')
