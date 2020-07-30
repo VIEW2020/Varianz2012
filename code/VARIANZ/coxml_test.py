@@ -28,6 +28,7 @@ from pycox.models import CoxCC, CoxTime
 
 from deep_survival import *
 from utils import *
+from rnn_models import *
 from hyperparameters import Hyperparameters
 
 from os import listdir
@@ -41,10 +42,13 @@ def main():
     # Load data
     print('Load data...')
     data = np.load(hp.data_pp_dir + 'data_arrays_' + hp.gender + '.npz')
+
+    x_trn = data['x_trn']
+    codes_trn = data['codes_trn']
+    month_trn = data['month_trn']
+    diagt_trn = data['diagt_trn']
     
     x_tst = data['x_tst']
-    time_tst = data['time_tst']
-    event_tst = data['event_tst']
     codes_tst = data['codes_tst']
     month_tst = data['month_tst']
     diagt_tst = data['diagt_tst']
@@ -53,48 +57,60 @@ def main():
     
     df_index_code = feather.read_dataframe(hp.data_pp_dir + 'df_index_code_' + hp.gender + '.feather')
     
-    df_tst = pd.DataFrame(x_tst, columns=cols_list)
-    df_tst['TIME'] = time_tst
-    df_tst['EVENT'] = event_tst 
-
+    df_trn = pd.DataFrame(x_trn, columns=cols_list)
+    df_trn['TIME'] = data['time_trn']
+    df_trn['EVENT'] = data['event_trn']
+    
     ####################################################################################################### 
 
     print('Create data loaders and tensors...')
-    data_tst = utils.TensorDataset(torch.from_numpy(x_tst),
-                                   torch.from_numpy(codes_tst),
-                                   torch.from_numpy(month_tst),
-                                   torch.from_numpy(diagt_tst))
+    data_trn = utils.TensorDataset(torch.from_numpy(x_trn), torch.from_numpy(codes_trn), torch.from_numpy(month_trn), torch.from_numpy(diagt_trn))
+    data_tst = utils.TensorDataset(torch.from_numpy(x_tst), torch.from_numpy(codes_tst), torch.from_numpy(month_tst), torch.from_numpy(diagt_tst))
 
     # Create batch queues
+    trn_loader = utils.DataLoader(data_trn, batch_size = hp.batch_size, shuffle = False, drop_last = False)
     tst_loader = utils.DataLoader(data_tst, batch_size = hp.batch_size, shuffle = False, drop_last = False)
 
     # Neural Net
-    net = NetAttention(x_tst.shape[1], df_index_code.shape[0]+1, hp).to(hp.device) #+1 for zero padding
+    net = NetRNN(x_trn.shape[1], df_index_code.shape[0]+1, hp).to(hp.device) #+1 for zero padding
+    net.eval()
 
     # Trained models
-    models = listdir(hp.data_dir + 'log_' + hp.gender + '/')
+    #tmp = listdir(hp.data_dir + 'log_' + hp.gender + '_iter3/')
+    tmp = listdir(hp.log_dir)
+    models = [i for i in tmp if '.pt' in i]
+    risk_matrix = np.zeros((x_tst.shape[0], len(models)))
 
     for i in range(len(models)):
-        print('Model {}'.format(i))
+        print('Model {}'.format(models[i]))
 
         # Restore variables from disk
-        net.load_state_dict(torch.load(hp.data_dir + 'log_' + hp.gender + '/' + models[i], map_location=hp.device))
+        net.load_state_dict(torch.load(hp.log_dir + models[i], map_location=hp.device))
+   
+        # Compute baseline survival using training data
+        log_partial_hazard = np.array([])
+        print('Computing baseline survival using training data...')
+        with torch.no_grad():
+            for _, (x_trn, codes_trn, month_trn, diagt_trn) in enumerate(tqdm(trn_loader)):
+                x_trn, codes_trn, month_trn, diagt_trn = x_trn.to(hp.device), codes_trn.to(hp.device), month_trn.to(hp.device), diagt_trn.to(hp.device)
+                log_partial_hazard = np.append(log_partial_hazard, net(x_trn, codes_trn, month_trn, diagt_trn).detach().cpu().numpy())
+        base_surv = baseline_survival(df_trn, log_partial_hazard).loc[1826]
    
         # Prediction
         log_partial_hazard = np.array([])
-        print('Computing partial hazard...')
-        net.eval()
+        print('Computing partial hazard for test data...')
         with torch.no_grad():
             for _, (x_tst, codes_tst, month_tst, diagt_tst) in enumerate(tqdm(tst_loader)):
                 x_tst, codes_tst, month_tst, diagt_tst = x_tst.to(hp.device), codes_tst.to(hp.device), month_tst.to(hp.device), diagt_tst.to(hp.device)
                 log_partial_hazard = np.append(log_partial_hazard, net(x_tst, codes_tst, month_tst, diagt_tst).detach().cpu().numpy())
         
         print('Predicting...')
-        base_surv = baseline_survival(df_tst, log_partial_hazard).loc[1826]
-        df_tst['RISK_' + str(i)] = 100*(1-np.power(base_surv, np.exp(log_partial_hazard)))
-
-    df_tst['RISK'] = df_tst.filter(like='RISK').mean(axis=1)
-    df_tst.to_feather(hp.plot_dir + 'df_tst_cml_' + hp.gender + '.feather')
+        risk_matrix[:, i] = 100*(1-np.power(base_surv, np.exp(log_partial_hazard)))
+        
+        print('Saving...')
+        np.savez(hp.results_dir + 'risk_matrix_' + hp.gender + '.npz', risk_matrix=risk_matrix)
+        save_obj(models, hp.results_dir + 'models.pkl')
+        
 
 if __name__ == '__main__':
     main()
