@@ -6,6 +6,7 @@ https://www.github.com/sebbarb/
 
 import feather
 import pandas as pd
+import numpy as np
 from hyperparameters import Hyperparameters
 
 from pdb import set_trace as bp
@@ -76,12 +77,12 @@ def main():
     # Save
     df_males = df[df['gender_code']]
     df_males.reset_index(drop=True, inplace=True)
-    #df_males.to_feather(hp.data_pp_dir + 'Py_VARIANZ_2012_v3-1_pp_males.feather')
+    df_males.to_feather(hp.data_pp_dir + 'Py_VARIANZ_2012_v3-1_pp_males.feather')
     np.savez(hp.data_pp_dir + 'means_males.npz', mean_age=mean_age_males, mean_nzdep=mean_nzdep_males)
 
     df_females = df[~df['gender_code']]
     df_females.reset_index(drop=True, inplace=True)
-    #df_females.to_feather(hp.data_pp_dir + 'Py_VARIANZ_2012_v3-1_pp_females.feather')
+    df_females.to_feather(hp.data_pp_dir + 'Py_VARIANZ_2012_v3-1_pp_females.feather')
     np.savez(hp.data_pp_dir + 'means_females.npz', mean_age=mean_age_females, mean_nzdep=mean_nzdep_females)
 
 

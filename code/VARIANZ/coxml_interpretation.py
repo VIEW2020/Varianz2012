@@ -142,7 +142,7 @@ def main():
         
     # Save
     df_index_code.sort_values(by=['TYPE', 'HR'], ascending=False, inplace=True)
-    df_index_code.to_csv(hp.data_dir + 'hr_addcodes_' + hp.gender + '.csv', index=False)
+    df_index_code.to_csv(hp.results_dir + 'hr_addcodes_' + hp.gender + '.csv', index=False)
     
     # # Keep only codes existing as primary
     # primary_codes = feather.read_dataframe(hp.data_pp_dir + 'primary_codes.feather')
