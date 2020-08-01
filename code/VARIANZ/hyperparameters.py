@@ -22,6 +22,7 @@ class Hyperparameters:
         self.data_pp_dir = '../../data/pp/'
         self.log_dir = self.data_dir + 'log_' + self.gender + '_iter3/'
         self.results_dir = self.data_dir + 'results/'
+        self.plots_dir = self.results_dir + 'plots/'
         
         # Seeds
         self.np_seed = 1234

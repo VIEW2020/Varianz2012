@@ -57,10 +57,7 @@ def main():
     mean_nzdep_females = df.loc[~df['gender_code'], 'en_nzdep_q'].mean()    
     df.loc[df['gender_code'], 'en_nzdep_q'] =  df.loc[df['gender_code'], 'en_nzdep_q'] - mean_nzdep_males
     df.loc[~df['gender_code'], 'en_nzdep_q'] =  df.loc[~df['gender_code'], 'en_nzdep_q'] - mean_nzdep_females
-    
-    print('Mean age (males, females): {},{}'.format(mean_age_males, mean_age_females))
-    print('Mean nzdep (males, females): {},{}'.format(mean_nzdep_males, mean_nzdep_females))
-    
+        
     # Create interaction columns
     df['age_X_bp'] = df['nhi_age'] * df['ph_bp_lowering_prior_6mths']
     df['age_X_diabetes'] = df['nhi_age'] * df['hx_vdr_diabetes']
@@ -79,11 +76,13 @@ def main():
     # Save
     df_males = df[df['gender_code']]
     df_males.reset_index(drop=True, inplace=True)
-    df_males.to_feather(hp.data_pp_dir + 'Py_VARIANZ_2012_v3-1_pp_males.feather')
+    #df_males.to_feather(hp.data_pp_dir + 'Py_VARIANZ_2012_v3-1_pp_males.feather')
+    np.savez(hp.data_pp_dir + 'means_males.npz', mean_age=mean_age_males, mean_nzdep=mean_nzdep_males)
 
     df_females = df[~df['gender_code']]
     df_females.reset_index(drop=True, inplace=True)
-    df_females.to_feather(hp.data_pp_dir + 'Py_VARIANZ_2012_v3-1_pp_females.feather')
+    #df_females.to_feather(hp.data_pp_dir + 'Py_VARIANZ_2012_v3-1_pp_females.feather')
+    np.savez(hp.data_pp_dir + 'means_females.npz', mean_age=mean_age_females, mean_nzdep=mean_nzdep_females)
 
 
 if __name__ == '__main__':
