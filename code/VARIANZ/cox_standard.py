@@ -51,6 +51,7 @@ def main():
     cph = CoxPHFitter()
     cph.fit(df, duration_col='TIME', event_col='EVENT', show_progress=True, step_size=0.5)
     cph.print_summary()
+    #males: 0.9751757392502516, females: 0.988709394816069
     base_surv = baseline_survival(df, np.dot(x-cph._norm_mean.values, cph.params_)).loc[1826]
     print(base_surv)
     print('done')
@@ -58,12 +59,10 @@ def main():
     ###################################################################
     
     print('Predicting...')
-    df_tst = pd.DataFrame(x_tst, columns=cols_list)
-    df_tst['TIME'] = time_tst
-    df_tst['EVENT'] = event_tst     
-    
     risk = 100*(1-np.power(base_surv, np.exp(np.dot(x_tst-cph._norm_mean.values, cph.params_))))
-    np.savez(hp.results_dir + 'risk_cox_standard_' + hp.gender + '.npz', risk=risk)
+    df_cox = pd.DataFrame({'RISK': risk})
+    
+    df_cox.to_feather(hp.results_dir + 'df_cox_' + hp.gender + '.feather')
 
 if __name__ == '__main__':
     main()

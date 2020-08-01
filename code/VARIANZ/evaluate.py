@@ -41,24 +41,20 @@ def main():
     df['TIME'] = time
     df['EVENT'] = event
     
-    data = np.load(hp.results_dir + 'risk_cox_standard_' + hp.gender + '.npz')
-    df['RISK_COX'] = data['risk']
-    
-    data = np.load(hp.results_dir + 'risk_matrix_' + hp.gender + '.npz')
-    risk_matrix = data['risk_matrix']
-    df['RISK_CML'] = risk_matrix.mean(axis=1)
+    df_cox = feather.read_dataframe(hp.results_dir + 'df_cox_' + hp.gender + '.feather')
+    df_cml = feather.read_dataframe(hp.results_dir + 'df_cml_' + hp.gender + '.feather')
         
     ################################################################################################
     
-    c_index = concordance_index(df['TIME'], -df['RISK_COX'], df['EVENT'])
+    c_index = concordance_index(df['TIME'], -df_cox['RISK'], df['EVENT'])
     print('Concordance Index Cox: {}'.format(c_index))
-    c_index = concordance_index(df['TIME'], -df['RISK_CML'], df['EVENT'])
+    c_index = concordance_index(df['TIME'], -df_cml['ENSEMBLE'], df['EVENT'])
     print('Concordance Index ML: {}'.format(c_index))
-    brier = brier_score(df['RISK_COX'], df['EVENT'])
-    print('Brier Score Cox: {}'.format(brier))    
-    brier = brier_score(df['RISK_CML'], df['EVENT'])
-    print('Brier Score ML: {}'.format(brier))
     
+    brier = brier_score(df_cox['RISK'], df['EVENT'])
+    print('Brier Score Cox: {}'.format(brier))    
+    brier = brier_score(df_cml['ENSEMBLE'], df['EVENT'])
+    print('Brier Score ML: {}'.format(brier))
 
 if __name__ == '__main__':
     main()

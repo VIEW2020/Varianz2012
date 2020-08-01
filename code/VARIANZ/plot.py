@@ -40,9 +40,9 @@ def calibration_plot(df_cox, df_cml, ax=None, **plt_kwargs):
     ax.scatter(df_cox['EVENT_PERC'], df_cox['RISK'], c='lightcoral')
     ax.scatter(df_cml['EVENT_PERC'], df_cml['RISK'], c='cornflowerblue')
 
-    ax.legend(['Cox PH', 'Deep Learning'])
+    ax.legend(['CVD Equations', 'Deep Learning'])
 
-    lim = max(ax.get_xlim(), ax.get_ylim())[1]
+    lim = max([df_cox['EVENT_PERC'].max(), df_cox['RISK'].max(), df_cml['EVENT_PERC'].max(), df_cml['RISK'].max()])+0.5
     ax.set_xlim(0, lim)
     ax.set_ylim(0, lim)
     ax.plot([0, lim], [0, lim], color = 'black', linewidth = 0.5)
@@ -72,10 +72,10 @@ def discrimination_plot(df_cox, df_cml, ax=None, **plt_kwargs):
     df_cox.reset_index(inplace=True)
     df_cml.reset_index(inplace=True)
     
-    ax.scatter(df_cox['QUANTILE'], df_cox['EVENT_PERC_TOTAL'], c='lightcoral')
-    ax.scatter(df_cml['QUANTILE'], df_cml['EVENT_PERC_TOTAL'], c='cornflowerblue')
+    ax.scatter(df_cox['QUANTILE'].astype(float)-0.1, df_cox['EVENT_PERC_TOTAL'], c='lightcoral')
+    ax.scatter(df_cml['QUANTILE'].astype(float)+0.1, df_cml['EVENT_PERC_TOTAL'], c='cornflowerblue')
 
-    ax.legend(['Cox PH', 'Deep Learning'])
+    ax.legend(['CVD Equations', 'Deep Learning'])
     
     ax.set_xlabel('Deciles of predicted risk')
     ax.set_ylabel('Proportion of all CVD events')
@@ -103,12 +103,12 @@ def main():
     df_cml['TIME'] = time
     df_cml['EVENT'] = event
     
-    data = np.load(hp.results_dir + 'risk_cox_standard_' + hp.gender + '.npz')
-    df_cox['RISK'] = data['risk']
-    
-    data = np.load(hp.results_dir + 'risk_matrix_' + hp.gender + '.npz')
-    risk_matrix = data['risk_matrix']
-    df_cml['RISK'] = risk_matrix.mean(axis=1)
+    df_cox['RISK'] = feather.read_dataframe(hp.results_dir + 'df_cox_' + hp.gender + '.feather')['RISK']
+    # df_cml['RISK'] = feather.read_dataframe(hp.results_dir + 'df_cml_' + hp.gender + '.feather')[hp.best_model]
+    df_cml['RISK'] = feather.read_dataframe(hp.results_dir + 'df_cml_' + hp.gender + '.feather')['ENSEMBLE']
+    # tmp = feather.read_dataframe(hp.results_dir + 'df_cml_' + hp.gender + '.feather')
+    # tmp.drop('ENSEMBLE', axis=1, inplace=True)
+    # df_cml['RISK'] = tmp.median(axis=1)
 
     ################################################################################################
 

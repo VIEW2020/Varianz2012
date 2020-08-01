@@ -14,13 +14,13 @@ class Hyperparameters:
     
         ### General #########################################################
         
-        self.gender = 'males'
+        self.gender = 'females'
         self.min_count = 200 # codes whose occurrence is less than min_count are encoded as OTHER
         
         # Data
         self.data_dir = '../../data/'
         self.data_pp_dir = '../../data/pp/'
-        self.log_dir = self.data_dir + 'log_' + self.gender + '/'
+        self.log_dir = self.data_dir + 'log_' + self.gender + '_iter3/'
         self.results_dir = self.data_dir + 'results/'
         
         # Seeds
@@ -72,5 +72,4 @@ class Hyperparameters:
         
         ### Evaluation ######################################################
         
-        self.attribution_alg = 'integrated_gradients' # integrated_gradients, gradient_shap, deeplift, inputxgradient
-        self.test_model = 'final_' + self.gender + '.pt'
+        self.best_model = 'final.pt' if self.gender == 'males' else 'final.pt'

@@ -5,8 +5,6 @@ https://www.github.com/sebbarb/
 '''
 
 import sys
-#sys.path.append('E:/Libraries/Python/')
-#sys.path.append('..\\lib\\')
 sys.path.append('../lib/')
 
 import numpy as np
@@ -76,16 +74,19 @@ def main():
     net.eval()
 
     # Trained models
-    #tmp = listdir(hp.data_dir + 'log_' + hp.gender + '_iter3/')
-    tmp = listdir(hp.log_dir)
+    tmp = listdir(hp.data_dir + 'log_' + hp.gender + '_iter3/')
+    # tmp = listdir(hp.log_dir)
     models = [i for i in tmp if '.pt' in i]
+    base_surv_vec = np.zeros((1, len(models)))
+    lph_matrix_trn = np.zeros((x_trn.shape[0], len(models)))
+    lph_matrix_tst = np.zeros((x_tst.shape[0], len(models)))
     risk_matrix = np.zeros((x_tst.shape[0], len(models)))
 
     for i in range(len(models)):
         print('Model {}'.format(models[i]))
-
         # Restore variables from disk
-        net.load_state_dict(torch.load(hp.log_dir + models[i], map_location=hp.device))
+        net.load_state_dict(torch.load(hp.data_dir + 'log_' + hp.gender + '_iter3/' + models[i], map_location=hp.device))
+        # net.load_state_dict(torch.load(hp.log_dir + models[i], map_location=hp.device))
    
         # Compute baseline survival using training data
         log_partial_hazard = np.array([])
@@ -94,7 +95,8 @@ def main():
             for _, (x_trn, codes_trn, month_trn, diagt_trn) in enumerate(tqdm(trn_loader)):
                 x_trn, codes_trn, month_trn, diagt_trn = x_trn.to(hp.device), codes_trn.to(hp.device), month_trn.to(hp.device), diagt_trn.to(hp.device)
                 log_partial_hazard = np.append(log_partial_hazard, net(x_trn, codes_trn, month_trn, diagt_trn).detach().cpu().numpy())
-        base_surv = baseline_survival(df_trn, log_partial_hazard).loc[1826]
+        lph_matrix_trn[:, i] = log_partial_hazard
+        base_surv_vec[0, i] = baseline_survival(df_trn, log_partial_hazard).loc[1826]
    
         # Prediction
         log_partial_hazard = np.array([])
@@ -103,14 +105,29 @@ def main():
             for _, (x_tst, codes_tst, month_tst, diagt_tst) in enumerate(tqdm(tst_loader)):
                 x_tst, codes_tst, month_tst, diagt_tst = x_tst.to(hp.device), codes_tst.to(hp.device), month_tst.to(hp.device), diagt_tst.to(hp.device)
                 log_partial_hazard = np.append(log_partial_hazard, net(x_tst, codes_tst, month_tst, diagt_tst).detach().cpu().numpy())
-        
-        print('Predicting...')
-        risk_matrix[:, i] = 100*(1-np.power(base_surv, np.exp(log_partial_hazard)))
-        
-        print('Saving...')
-        np.savez(hp.results_dir + 'risk_matrix_' + hp.gender + '.npz', risk_matrix=risk_matrix)
-        save_obj(models, hp.results_dir + 'models.pkl')
-        
+        lph_matrix_tst[:, i] = log_partial_hazard
+        risk_matrix[:, i] = 100*(1-np.power(base_surv_vec[0, i], np.exp(log_partial_hazard)))
+
+    df_base_surv = pd.DataFrame(base_surv_vec, columns=models)
+    df_lph_trn = pd.DataFrame(lph_matrix_trn, columns=models)
+    df_lph_tst = pd.DataFrame(lph_matrix_tst, columns=models)
+    df_cml = pd.DataFrame(risk_matrix, columns=models)
+
+    print('Ensemble...')
+    lph_trn_ensemble = lph_matrix_trn.mean(axis=1)
+    df_lph_trn['ENSEMBLE'] = lph_trn_ensemble
+    base_surv_ensemble = baseline_survival(df_trn, lph_trn_ensemble).loc[1826]
+    df_base_surv['ENSEMBLE'] = base_surv_ensemble
+    lph_tst_ensemble = lph_matrix_tst.mean(axis=1)
+    df_lph_tst['ENSEMBLE'] = lph_tst_ensemble
+    df_cml['ENSEMBLE'] = 100*(1-np.power(base_surv_ensemble, np.exp(lph_tst_ensemble)))
+    
+    print('Saving...')
+    df_base_surv.to_feather(hp.results_dir + 'df_base_surv_' + hp.gender + '.feather')
+    df_lph_trn.to_feather(hp.results_dir + 'df_lph_trn_' + hp.gender + '.feather')
+    df_lph_tst.to_feather(hp.results_dir + 'df_lph_tst_' + hp.gender + '.feather')
+    df_cml.to_feather(hp.results_dir + 'df_cml_' + hp.gender + '.feather')
+
 
 if __name__ == '__main__':
     main()
