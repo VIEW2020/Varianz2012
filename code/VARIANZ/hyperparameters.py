@@ -16,11 +16,12 @@ class Hyperparameters:
         
         self.gender = 'males'
         self.min_count = 200 # codes whose occurrence is less than min_count are encoded as OTHER
+        self.num_folds = 5
         
         # Data
         self.data_dir = '../../data/'
         self.data_pp_dir = '../../data/pp/'
-        self.log_dir = self.data_dir + 'log_' + self.gender + '_iter3/'
+        self.log_dir = self.data_dir + 'log_' + self.gender + '/'
         self.results_dir = self.data_dir + 'results/'
         self.plots_dir = self.results_dir + 'plots/'
         
@@ -42,7 +43,7 @@ class Hyperparameters:
         self.patience = 10 # early stopping
         self.num_months_hx = 60
         now = datetime.now() # current date and time
-        self.model_name = now.strftime('%Y%m%d_%H%M%S_%f') + '.pt'    
+        self.model_name = now.strftime('%Y%m%d_%H%M%S_%f') + '.pt'
             
         # Network
         if trial:

@@ -83,45 +83,33 @@ def main():
         diagt[ac['INDEX_PERSON'].values, ac['COUNT'].values] = ac['DIAG_TYPE'].values
         print('-----------------------------------------')
 
-        # split data
-        print('Split data into train/validate/test...')
-        df_trn, df_tst = train_test_split(df, test_size=0.1, train_size=0.8, shuffle=True, stratify=df['EVENT'])
-        df_val = df.drop(df_trn.index).drop(df_tst.index)
+        # data folds stratified by event
+        print('Split data into folds...')
+        num_event = df['EVENT'].sum()
+        num_nonevent = (~df['EVENT']).sum()
+        folds_event = np.zeros((num_event, 1))
+        folds_nonevent = np.zeros((num_nonevent, 1))
+        num_fold_event = np.floor(num_event/hp.num_folds)
+        num_fold_nonevent = np.floor(num_nonevent/hp.num_folds)
+        for i in range(1, hp.num_folds):
+            folds_event[(i*num_fold_event):((i+1)*num_fold_event)] = i
+            folds_nonevent[(i*num_fold_event):((i+1)*num_fold_event)] = i
+        folds_event = np.random.shuffle(folds_event)
+        folds_nonevent = np.random.shuffle(folds_nonevent)
+        df.loc[df['EVENT'], 'FOLD'] = folds_event
+        df.loc[~df['EVENT'], 'FOLD'] = folds_nonevent
 
-        # Arrays
-        cols_list = []
-        for col in df.columns.values.tolist():
-            if col != 'TIME' and col !='EVENT' and col !='VSIMPLE_INDEX_MASTER' and col !='gender_code':
-                cols_list.append(col)
-        x_trn, x_val, x_tst = df_trn[cols_list].values.astype('float32'), df_val[cols_list].values.astype('float32'), df_tst[cols_list].values.astype('float32')
-        
-        time_trn, time_val, time_tst = df_trn['TIME'].values, df_val['TIME'].values, df_tst['TIME'].values
-        event_trn, event_val, event_tst = df_trn['EVENT'].values, df_val['EVENT'].values, df_tst['EVENT'].values
-        
-        codes_trn, codes_val, codes_tst = codes[df_trn.index], codes[df_val.index], codes[df_tst.index]
-        month_trn, month_val, month_tst = month[df_trn.index], month[df_val.index], month[df_tst.index]
-        diagt_trn, diagt_val, diagt_tst = diagt[df_trn.index], diagt[df_val.index], diagt[df_tst.index]
-
-        # Create datasets
-        sort_idx_trn, case_idx_trn, max_idx_control_trn = sort_and_case_indices(x_trn, time_trn, event_trn)
-        x_trn, time_trn, event_trn = x_trn[sort_idx_trn], time_trn[sort_idx_trn], event_trn[sort_idx_trn]
-        codes_trn, month_trn, diagt_trn = codes_trn[sort_idx_trn], month_trn[sort_idx_trn], diagt_trn[sort_idx_trn]
-        
-        sort_idx_val, case_idx_val, max_idx_control_val = sort_and_case_indices(x_val, time_val, event_val)
-        x_val, time_val, event_val = x_val[sort_idx_val], time_val[sort_idx_val], event_val[sort_idx_val]
-        codes_val, month_val, diagt_val = codes_val[sort_idx_val], month_val[sort_idx_val], diagt_val[sort_idx_val]
+        # Other arrays
+        bp()
+        time = df['TIME'].values
+        event = df['EVENT'].values
+        fold = df['FOLD'].values
+        df.drop(['TIME', 'EVENT', 'FOLD', 'VSIMPLE_INDEX_MASTER', 'gender_code'], inplace=True)
+        x = df.values.astype('float32')
         
         print('-----------------------------------------')
         print('Save...')
-        np.savez(hp.data_pp_dir + 'data_arrays_' + gender + '.npz', 
-            x_trn=x_trn, time_trn=time_trn, event_trn=event_trn,
-            codes_trn=codes_trn, month_trn=month_trn, diagt_trn=diagt_trn,
-            case_idx_trn=case_idx_trn, max_idx_control_trn=max_idx_control_trn,
-            x_val=x_val, time_val=time_val, event_val=event_val,
-            codes_val=codes_val, month_val=month_val, diagt_val=diagt_val,
-            case_idx_val=case_idx_val, max_idx_control_val=max_idx_control_val,
-            x_tst=x_tst, time_tst=time_tst, event_tst=event_tst, 
-            codes_tst=codes_tst, month_tst=month_tst, diagt_tst=diagt_tst)
+        np.savez(hp.data_pp_dir + 'data_arrays_' + gender + '.npz', x=x, time=time, event=event, codes=codes, month=month, diagt=diagt)
         df_index_code.to_feather(hp.data_pp_dir + 'df_index_code_' + gender + '.feather')
         save_obj(cols_list, hp.data_pp_dir + 'cols_list.pkl')
 

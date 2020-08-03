@@ -27,10 +27,6 @@ def main():
     df.rename(columns={'DIAG_TYP': 'DIAG_TYPE'}, inplace=True)
     df['DIAG_TYPE'] = df['DIAG_TYPE'].replace({'A': 1, 'B': 2, 'E': 3, 'O': 4})
 
-    print('Codes that actually exist as primary...')
-    primary_codes = df.loc[df['DIAG_TYPE'] == 1, 'CLIN_CD_10'].drop_duplicates().reset_index()
-    primary_codes.to_feather(hp.data_pp_dir + 'primary_codes.feather')
-
     print('Split males and females...')
     males = feather.read_dataframe(hp.data_pp_dir + 'Py_VARIANZ_2012_v3-1_pp_males.feather')['VSIMPLE_INDEX_MASTER']
     females = feather.read_dataframe(hp.data_pp_dir + 'Py_VARIANZ_2012_v3-1_pp_females.feather')['VSIMPLE_INDEX_MASTER']

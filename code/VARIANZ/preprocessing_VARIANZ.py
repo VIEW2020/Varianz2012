@@ -18,9 +18,9 @@ def main():
     df = feather.read_dataframe(hp.data_dir + 'Py_VARIANZ_2012_v3-1.feather')
     
     # Exclude
-    df.dropna(subset=['end_fu_date'], inplace=True)
     df = df[~df['ph_loopdiuretics_prior_5yrs_3evts'].astype(bool)]
     df = df[~df['ph_antianginals_prior_5yrs_3evts' ].astype(bool)]
+    df.dropna(subset=['end_fu_date'], inplace=True)
     
     # Adjust data types
     df['nhi_age'] = df['nhi_age'].astype(int)
