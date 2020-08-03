@@ -91,7 +91,7 @@ def objective(trial, data, df_index_code):
     optimizer = optim.Adam(net.parameters(), lr=hp.learning_rate)
     
     best, num_bad_epochs = 100., 0
-    for epoch in range(hp.max_epochs):
+    for epoch in range(1000):
         trn(trn_loader, x_trn, codes_trn, month_trn, diagt_trn, net, criterion, optimizer, hp)
         loss_val = val(val_loader, x_val, codes_val, month_val, diagt_val, net, criterion, epoch, hp)
         # early stopping
@@ -121,9 +121,8 @@ def main():
     df_index_code = feather.read_dataframe(pp.data_pp_dir + 'df_index_code_' + pp.gender + '.feather')
     
     print('Begin study...')
-    # study = optuna.create_study(sampler=optuna.samplers.TPESampler(), pruner=optuna.pruners.SuccessiveHalvingPruner())
-    study = optuna.create_study(pruner=optuna.pruners.NopPruner())
-    study.optimize(lambda trial: objective(trial, data, df_index_code), n_trials=30)
+    study = optuna.create_study(sampler=optuna.samplers.TPESampler(), pruner=optuna.pruners.SuccessiveHalvingPruner())
+    study.optimize(lambda trial: objective(trial, data, df_index_code), n_trials=100)
     
     print('Save...')
     save_obj(study, pp.log_dir + 'study_' + pp.gender + '.pkl')

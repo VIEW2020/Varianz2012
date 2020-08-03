@@ -25,7 +25,7 @@ class NetRNN(nn.Module):
         self.nonprop_hazards = hp.nonprop_hazards
         self.add_diagt = hp.add_diagt
         self.add_month = hp.add_month
-        self.num_months_hx = hp.num_months_hx
+        self.num_months_hx = hp.num_months_hx-1
         self.rnn_type = hp.rnn_type
         self.num_rnn_layers = hp.num_rnn_layers
         self.embedding_dim = hp.embedding_dim
@@ -96,7 +96,7 @@ class NetRNN_Interpret(nn.Module):
     def __init__(self, num_input, num_embeddings, hp):
         super(NetRNN_Interpret, self).__init__()
         # Parameters ######################################################################################################################
-        self.num_months_hx = hp.num_months_hx
+        self.num_months_hx = hp.num_months_hx-1
         self.embedding_dim = hp.embedding_dim
         # Embedding layers ################################################################################################################
         self.embed_codes = nn.Embedding(num_embeddings = num_embeddings, embedding_dim = hp.embedding_dim, padding_idx = 0)

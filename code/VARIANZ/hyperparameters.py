@@ -17,6 +17,7 @@ class Hyperparameters:
         self.gender = 'males'
         self.min_count = 200 # codes whose occurrence is less than min_count are encoded as OTHER
         self.num_folds = 5
+        self.num_trials = 10
         
         # Data
         self.data_dir = '../../data/'
@@ -39,7 +40,7 @@ class Hyperparameters:
         ### Model ###########################################################
 
         self.batch_size = 256
-        self.max_epochs = 10000
+        self.max_epochs = 10
         self.patience = 10 # early stopping
         self.num_months_hx = 60
         now = datetime.now() # current date and time
