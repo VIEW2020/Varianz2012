@@ -83,10 +83,17 @@ def main():
         diagt[ac['INDEX_PERSON'].values, ac['COUNT'].values] = ac['DIAG_TYPE'].values
         print('-----------------------------------------')
 
+        print('Mark validation data...')
+        df_trn, df_tst = train_test_split(df, test_size=0.1, train_size=0.8, shuffle=True, stratify=df['EVENT'], random_state=hp.np_seed)
+        df['VALIDATION'] = True
+        df.loc[df_trn.index, 'VALIDATION'] = False
+        df.loc[df_tst.index, 'VALIDATION'] = False
+
         # data folds stratified by event
         print('Split data into folds...')
-        num_event = df['EVENT'].astype(bool).sum()
-        num_nonevent = (~df['EVENT'].astype(bool)).sum()
+        df['EVENT'] = df['EVENT'].astype(bool)
+        num_event = (~df['VALIDATION'] & df['EVENT']).sum()
+        num_nonevent = (~df['VALIDATION'] & ~df['EVENT']).sum()
         folds_event = np.zeros(num_event)
         folds_nonevent = np.zeros(num_nonevent)
         num_fold_event = int(np.floor(num_event/hp.num_folds))
@@ -97,14 +104,15 @@ def main():
         np.random.shuffle(folds_event)
         np.random.shuffle(folds_nonevent)
         df['FOLD'] = 0
-        df.loc[df['EVENT'].astype(bool), 'FOLD'] = folds_event
-        df.loc[~(df['EVENT'].astype(bool)), 'FOLD'] = folds_nonevent
+        df.loc[~df['VALIDATION'] & df['EVENT'], 'FOLD'] = folds_event
+        df.loc[~df['VALIDATION'] & ~df['EVENT'], 'FOLD'] = folds_nonevent
+        df.loc[df['VALIDATION'], 'FOLD'] = 99 #don't consider for training/testing
 
         # Other arrays
         time = df['TIME'].values
-        event = df['EVENT'].values
+        event = df['EVENT'].values.astype(int)
         fold = df['FOLD'].values
-        df.drop(['TIME', 'EVENT', 'FOLD', 'VSIMPLE_INDEX_MASTER', 'gender_code'], axis=1, inplace=True)
+        df.drop(['TIME', 'EVENT', 'FOLD', 'VALIDATION', 'VSIMPLE_INDEX_MASTER', 'gender_code'], axis=1, inplace=True)
         x = df.values.astype('float32')
         
         print('-----------------------------------------')
@@ -112,6 +120,7 @@ def main():
         np.savez(hp.data_pp_dir + 'data_arrays_' + gender + '.npz', x=x, time=time, event=event, codes=codes, month=month, diagt=diagt, fold=fold)
         df_index_code.to_feather(hp.data_pp_dir + 'df_index_code_' + gender + '.feather')
         save_obj(list(df.columns), hp.data_pp_dir + 'cols_list.pkl')
+        bp()
 
 
 if __name__ == '__main__':
