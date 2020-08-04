@@ -82,9 +82,8 @@ def main():
         month[ac['INDEX_PERSON'].values, ac['COUNT'].values] = ac['MONTH'].values
         diagt[ac['INDEX_PERSON'].values, ac['COUNT'].values] = ac['DIAG_TYPE'].values
         print('-----------------------------------------')
-
         print('Mark validation data...')
-        df_trn, df_tst = train_test_split(df, test_size=0.1, train_size=0.8, shuffle=True, stratify=df['EVENT'], random_state=hp.np_seed)
+        df_trn, df_tst = train_test_split(df, test_size=0.1, train_size=0.8, shuffle=True, stratify=df['EVENT'])
         df['VALIDATION'] = True
         df.loc[df_trn.index, 'VALIDATION'] = False
         df.loc[df_tst.index, 'VALIDATION'] = False
@@ -120,7 +119,6 @@ def main():
         np.savez(hp.data_pp_dir + 'data_arrays_' + gender + '.npz', x=x, time=time, event=event, codes=codes, month=month, diagt=diagt, fold=fold)
         df_index_code.to_feather(hp.data_pp_dir + 'df_index_code_' + gender + '.feather')
         save_obj(list(df.columns), hp.data_pp_dir + 'cols_list.pkl')
-        bp()
 
 
 if __name__ == '__main__':
