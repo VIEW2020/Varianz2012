@@ -31,13 +31,9 @@ def main():
     data = np.load(hp.data_pp_dir + 'data_arrays_' + hp.gender + '.npz')
     
     print('Use all data for model fitting...')
-    x = np.concatenate((data['x_trn'], data['x_val'], data['x_tst']))
-    time = np.concatenate((data['time_trn'], data['time_val'], data['time_tst']))
-    event = np.concatenate((data['event_trn'], data['event_val'], data['event_tst']))
-    
-    x_tst = data['x_tst']
-    time_tst = data['time_tst']
-    event_tst = data['event_tst']
+    x = data['x']
+    time = data['time']
+    event = data['event']
     
     cols_list = load_obj(hp.data_pp_dir + 'cols_list.pkl')
     
@@ -51,7 +47,7 @@ def main():
     cph = CoxPHFitter()
     cph.fit(df, duration_col='TIME', event_col='EVENT', show_progress=True, step_size=0.5)
     cph.print_summary()
-    #males: 0.9751757392502516, females: 0.988709394816069
+    #males: 0.975175739250251, females: 0.9887093948160717
     base_surv = baseline_survival(df, np.dot(x-cph._norm_mean.values, cph.params_)).loc[1826]
     print(base_surv)
     print('done')
@@ -59,8 +55,9 @@ def main():
     ###################################################################
     
     print('Predicting...')
-    risk = 100*(1-np.power(base_surv, np.exp(np.dot(x_tst-cph._norm_mean.values, cph.params_))))
-    df_cox = pd.DataFrame({'RISK': risk})
+    lph = np.dot(x-cph._norm_mean.values, cph.params_)
+    risk = 100*(1-np.power(base_surv, np.exp(lph)))
+    df_cox = pd.DataFrame({'LPH': lph, 'RISK': risk})
     
     df_cox.to_feather(hp.results_dir + 'df_cox_' + hp.gender + '.feather')
 

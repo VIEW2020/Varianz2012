@@ -36,7 +36,7 @@ def main():
     for fold in range(hp.num_folds):
         print('Fold: {}'.format(fold))
         
-        idx = (data['fold'] != fold)
+        idx = (data['fold'] != fold) & (data['fold'] != 99)
         x = data['x'][idx]
         time = data['time'][idx]
         event = data['event'][idx]

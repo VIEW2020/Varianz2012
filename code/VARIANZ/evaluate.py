@@ -17,6 +17,7 @@ import tqdm
 
 from hyperparameters import Hyperparameters
 from utils import *
+from EvalSurv import EvalDstat
 
 from pdb import set_trace as bp
 
@@ -64,33 +65,56 @@ def main():
     print('Load data...')
     hp = Hyperparameters()
     data = np.load(hp.data_pp_dir + 'data_arrays_' + hp.gender + '.npz')
-        
-    x = data['x_tst']
-    time = data['time_tst']
-    event = data['event_tst']
+    time = data['time']
+    event = data['event']
     
-    cols_list = load_obj(hp.data_pp_dir + 'cols_list.pkl')
+    df = pd.DataFrame({'TIME': data['time'], 'EVENT': data['event']})
+    df_cox = df.copy()
+    df_cml = df.copy()
     
-    df = pd.DataFrame(x, columns=cols_list)
-    df['TIME'] = time
-    df['EVENT'] = event
+    # load predicted risk
+    df_cox['RISK'] = feather.read_dataframe(hp.results_dir + 'df_cox_' + hp.gender + '.feather')['RISK']
+    df_cml['RISK'] = 0
+    for fold in range(hp.num_folds):
+        df_cml.loc[data['fold'] == fold, 'RISK'] = feather.read_dataframe(hp.results_dir + 'df_cml_' + hp.gender + '_fold_' + str(fold) + '.feather')['ENSEMBLE'].values
+
+    # load log partial hazards
+    df_cox['LPH'] = feather.read_dataframe(hp.results_dir + 'df_cox_' + hp.gender + '.feather')['LPH']
+    df_cml['LPH'] = 0
+    for fold in range(hp.num_folds):
+        df_cml.loc[data['fold'] == fold, 'LPH'] = feather.read_dataframe(hp.results_dir + 'df_lph_' + hp.gender + '_fold_' + str(fold) + '.feather')['ENSEMBLE'].values
     
-    df_cox = feather.read_dataframe(hp.results_dir + 'df_cox_' + hp.gender + '.feather')
-    df_cml = feather.read_dataframe(hp.results_dir + 'df_cml_' + hp.gender + '.feather')
-        
+    # remove validation data
+    df_cox = df_cox[data['fold'] != 99]
+    df_cml = df_cml[data['fold'] != 99]
+
     ################################################################################################
     
-    c_index = concordance_index(df['TIME'], -df_cox['RISK'], df['EVENT'])
-    print('Concordance Index Cox: {}'.format(c_index))
-    c_index = concordance_index(df['TIME'], -df_cml['ENSEMBLE'], df['EVENT'])
-    print('Concordance Index ML: {}'.format(c_index))
+    # c_index = concordance_index(df_cox['TIME'], -df_cox['RISK'], df_cox['EVENT'])
+    # print('Concordance Index Cox: {:.3}'.format(c_index))
+    # c_index = concordance_index(df_cml['TIME'], -df_cml['RISK'], df_cml['EVENT'])
+    # print('Concordance Index ML: {:.3}'.format(c_index))
     
-    df['SURV'] = 1-df_cox['RISK']/100
-    brier = brier_score(df, 1826)
-    print('Brier Score Cox: {}'.format(brier))
-    df['SURV'] = 1-df_cml['ENSEMBLE']/100
-    brier = brier_score(df, 1826)
-    print('Brier Score ML: {}'.format(brier))
+    # df_cox['SURV'] = 1-df_cox['RISK']/100
+    # # brier = brier_score(df_cox, 1826)
+    # brier = integrated_brier_score(df_cox)
+    # print('Brier Score Cox: {}'.format(brier))
+    # df_cml['SURV'] = 1-df_cml['RISK']/100
+    # # brier = brier_score(df_cml, 1826)
+    # brier = integrated_brier_score(df_cml)
+    # print('Brier Score ML: {}'.format(brier))
+    
+    eval_cox = EvalDstat(df_cox['LPH'].values, df_cox['TIME'].values, df_cox['EVENT'].values)
+    dindex_cox, lCI_cox, uCI_cox = eval_cox.Dindex()
+    r2_cox = eval_cox.R_squared_D()
+    print('D-index Cox (95% CI): {:.3}'.format(dindex_cox), ' ({:.3}'.format(lCI_cox), ',  {:.3}'.format(uCI_cox), ")")
+    print('R-squared(D) Cox: {:.3}'.format(r2_cox))
+
+    eval_cml = EvalDstat(df_cml['LPH'], df_cml['TIME'], df_cml['EVENT'])
+    dindex_cml, lCI_cml, uCI_cml = eval_cml.Dindex()
+    r2_cml = eval_cml.R_squared_D()
+    print('D-index ML (95% CI): {:.3}'.format(dindex_cml), ' ({:.3}'.format(lCI_cml), ',  {:.3}'.format(uCI_cml), ")")
+    print('R-squared(D) ML: {:.3}'.format(r2_cml))
     
 
 if __name__ == '__main__':

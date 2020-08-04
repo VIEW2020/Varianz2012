@@ -82,7 +82,7 @@ def main():
             log_partial_hazard = np.array([])
             print('Computing partial hazard for test data...')
             with torch.no_grad():
-                for _, (x, codes, month, diagt) in enumerate(tqdm(tst_loader)):
+                for _, (x, codes, month, diagt) in enumerate(tqdm(loader)):
                     x, codes, month, diagt = x.to(hp.device), codes.to(hp.device), month.to(hp.device), diagt.to(hp.device)
                     log_partial_hazard = np.append(log_partial_hazard, net(x, codes, month, diagt).detach().cpu().numpy())
             lph_matrix[:, i] = log_partial_hazard
@@ -101,9 +101,9 @@ def main():
         df_cml['ENSEMBLE'] = 100*(1-np.power(base_surv_ensemble, np.exp(lph_ensemble)))
         
         print('Saving...')
-        df_base_surv.to_feather(hp.results_dir + 'df_base_surv_' + hp.gender + 'fold_' + str(fold) + '.feather')
-        df_lph.to_feather(hp.results_dir + 'df_lph_' + hp.gender + 'fold_' + str(fold) + '.feather')
-        df_cml.to_feather(hp.results_dir + 'df_cml_' + hp.gender + 'fold_' + str(fold) + '.feather')
+        df_base_surv.to_feather(hp.results_dir + 'df_base_surv_' + hp.gender + '_fold_' + str(fold) + '.feather')
+        df_lph.to_feather(hp.results_dir + 'df_lph_' + hp.gender + '_fold_' + str(fold) + '.feather')
+        df_cml.to_feather(hp.results_dir + 'df_cml_' + hp.gender + '_fold_' + str(fold) + '.feather')
 
 
 if __name__ == '__main__':

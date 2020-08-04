@@ -89,11 +89,8 @@ def main():
     hp = Hyperparameters()
     data = np.load(hp.data_pp_dir + 'data_arrays_' + hp.gender + '.npz')
     means = np.load(hp.data_pp_dir + 'means_' + hp.gender + '.npz')
-        
-    x = data['x_tst']
-    time = data['time_tst']
-    event = data['event_tst']
-    
+    x = data['x']
+    event = data['event']
     cols_list = load_obj(hp.data_pp_dir + 'cols_list.pkl')
     
     # restore original age and en_nzdep_q before centering
@@ -101,15 +98,20 @@ def main():
     x[:, cols_list.index('en_nzdep_q')] += means['mean_nzdep']
     
     df_cox = pd.DataFrame(x, columns=cols_list)
-    df_cox['TIME'] = time
     df_cox['EVENT'] = event
     
     df_cml = pd.DataFrame(x, columns=cols_list)
-    df_cml['TIME'] = time
     df_cml['EVENT'] = event
     
+    # load predicted risk
     df_cox['RISK'] = feather.read_dataframe(hp.results_dir + 'df_cox_' + hp.gender + '.feather')['RISK']
-    df_cml['RISK'] = feather.read_dataframe(hp.results_dir + 'df_cml_' + hp.gender + '.feather')['ENSEMBLE']
+    df_cml['RISK'] = 0
+    for fold in range(hp.num_folds):
+        df_cml.loc[data['fold'] == fold, 'RISK'] = feather.read_dataframe(hp.results_dir + 'df_cml_' + hp.gender + '_fold_' + str(fold) + '.feather')['ENSEMBLE'].values
+    
+    # remove validation data
+    df_cox = df_cox[data['fold'] != 99]
+    df_cml = df_cml[data['fold'] != 99]
 
     ################################################################################################
 

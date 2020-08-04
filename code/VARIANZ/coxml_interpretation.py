@@ -81,8 +81,11 @@ def main():
     print('Compute HRs...')
 
     # Trained models
-    tmp = listdir(hp.data_dir + 'log_' + hp.gender + '_iter3/')
-    models = [i for i in tmp if '.pt' in i]
+    models = []
+    for fold in range(hp.num_folds):
+        tmp = listdir(hp.log_dir + 'fold_' + str(fold) + '/')
+        models = ['fold_' + str(fold) + '/' + i for i in tmp if '.pt' in i]    
+
     log_hr_columns = np.zeros((num_cols, len(models)))
     log_hr_embeddings = np.zeros((num_embeddings, len(models)))
 
@@ -95,7 +98,7 @@ def main():
         print('HRs for model {}'.format(i))
         
         # Restore variables from disk
-        net.load_state_dict(torch.load(hp.data_dir + 'log_' + hp.gender + '_iter3/' + models[i], map_location=hp.device))
+        net.load_state_dict(torch.load(hp.log_dir + models[i], map_location=hp.device))
 
         with torch.no_grad():
             x_b = torch.zeros((1, num_cols), device=hp.device)
@@ -144,12 +147,5 @@ def main():
     df_index_code.sort_values(by=['TYPE', 'HR'], ascending=False, inplace=True)
     df_index_code.to_csv(hp.results_dir + 'hr_addcodes_' + hp.gender + '.csv', index=False)
     
-    # # Keep only codes existing as primary
-    # primary_codes = feather.read_dataframe(hp.data_pp_dir + 'primary_codes.feather')
-    # df_index_code = df_index_code[(df_index_code['TYPE'] == 0) | (df_index_code['TYPE'] == 2) | df_index_code['CODE'].isin(primary_codes['CLIN_CD_10'])]    
-
-    # # Save
-    # df_index_code.to_csv(hp.data_dir + 'hr_addcodes_reduced_' + hp.gender + '.csv', index=False)
-
 if __name__ == '__main__':
     main()
