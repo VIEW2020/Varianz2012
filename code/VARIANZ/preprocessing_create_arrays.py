@@ -85,33 +85,34 @@ def main():
 
         # data folds stratified by event
         print('Split data into folds...')
-        num_event = df['EVENT'].sum()
-        num_nonevent = (~df['EVENT']).sum()
-        folds_event = np.zeros((num_event, 1))
-        folds_nonevent = np.zeros((num_nonevent, 1))
-        num_fold_event = np.floor(num_event/hp.num_folds)
-        num_fold_nonevent = np.floor(num_nonevent/hp.num_folds)
+        num_event = df['EVENT'].astype(bool).sum()
+        num_nonevent = (~df['EVENT'].astype(bool)).sum()
+        folds_event = np.zeros(num_event)
+        folds_nonevent = np.zeros(num_nonevent)
+        num_fold_event = int(np.floor(num_event/hp.num_folds))
+        num_fold_nonevent = int(np.floor(num_nonevent/hp.num_folds))
         for i in range(1, hp.num_folds):
             folds_event[(i*num_fold_event):((i+1)*num_fold_event)] = i
-            folds_nonevent[(i*num_fold_event):((i+1)*num_fold_event)] = i
-        folds_event = np.random.shuffle(folds_event)
-        folds_nonevent = np.random.shuffle(folds_nonevent)
-        df.loc[df['EVENT'], 'FOLD'] = folds_event
-        df.loc[~df['EVENT'], 'FOLD'] = folds_nonevent
+            folds_nonevent[(i*num_fold_nonevent):((i+1)*num_fold_nonevent)] = i
+        np.random.shuffle(folds_event)
+        np.random.shuffle(folds_nonevent)
+        df['FOLD'] = 0
+        df.loc[df['EVENT'].astype(bool), 'FOLD'] = folds_event
+        df.loc[~(df['EVENT'].astype(bool)), 'FOLD'] = folds_nonevent
 
         # Other arrays
-        bp()
         time = df['TIME'].values
         event = df['EVENT'].values
         fold = df['FOLD'].values
-        df.drop(['TIME', 'EVENT', 'FOLD', 'VSIMPLE_INDEX_MASTER', 'gender_code'], inplace=True)
+        df.drop(['TIME', 'EVENT', 'FOLD', 'VSIMPLE_INDEX_MASTER', 'gender_code'], axis=1, inplace=True)
         x = df.values.astype('float32')
         
         print('-----------------------------------------')
         print('Save...')
         np.savez(hp.data_pp_dir + 'data_arrays_' + gender + '.npz', x=x, time=time, event=event, codes=codes, month=month, diagt=diagt, fold=fold)
         df_index_code.to_feather(hp.data_pp_dir + 'df_index_code_' + gender + '.feather')
-        save_obj(cols_list, hp.data_pp_dir + 'cols_list.pkl')
+        save_obj(list(df.columns), hp.data_pp_dir + 'cols_list.pkl')
+
 
 if __name__ == '__main__':
     main()
