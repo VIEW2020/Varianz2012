@@ -17,7 +17,7 @@ import tqdm
 
 from hyperparameters import Hyperparameters
 from utils import *
-from EvalSurv import EvalDstat
+from EvalSurv import EvalSurv
 
 from pdb import set_trace as bp
 
@@ -89,32 +89,25 @@ def main():
     df_cml = df_cml[data['fold'] != 99]
 
     ################################################################################################
-    
-    # c_index = concordance_index(df_cox['TIME'], -df_cox['RISK'], df_cox['EVENT'])
-    # print('Concordance Index Cox: {:.3}'.format(c_index))
-    # c_index = concordance_index(df_cml['TIME'], -df_cml['RISK'], df_cml['EVENT'])
-    # print('Concordance Index ML: {:.3}'.format(c_index))
-    
-    # df_cox['SURV'] = 1-df_cox['RISK']/100
-    # # brier = brier_score(df_cox, 1826)
-    # brier = integrated_brier_score(df_cox)
-    # print('Brier Score Cox: {}'.format(brier))
-    # df_cml['SURV'] = 1-df_cml['RISK']/100
-    # # brier = brier_score(df_cml, 1826)
-    # brier = integrated_brier_score(df_cml)
-    # print('Brier Score ML: {}'.format(brier))
-    
-    eval_cox = EvalDstat(df_cox['LPH'].values, df_cox['TIME'].values, df_cox['EVENT'].values)
-    dindex_cox, lCI_cox, uCI_cox = eval_cox.Dindex()
-    r2_cox = eval_cox.R_squared_D()
-    print('D-index Cox (95% CI): {:.3}'.format(dindex_cox), ' ({:.3}'.format(lCI_cox), ',  {:.3}'.format(uCI_cox), ")")
-    print('R-squared(D) Cox: {:.3}'.format(r2_cox))
 
-    eval_cml = EvalDstat(df_cml['LPH'], df_cml['TIME'], df_cml['EVENT'])
+    base_surv_cox = baseline_survival(df_cox[['TIME', 'EVENT']], df_cox['LPH'])
+    eval_cox = EvalSurv(df_cox, base_surv_cox)
+    dindex_cox, lCI_cox, uCI_cox = eval_cox.Dindex()
+    print('D-index Cox (95% CI): {:.3}'.format(dindex_cox), ' ({:.3}'.format(lCI_cox), ',  {:.3}'.format(uCI_cox), ")")
+    print('R-squared(D) Cox: {:.3}'.format(eval_cox.R_squared_D()))
+    print('Concordance Cox: {:.3}'.format(eval_cox.concordance_index()))
+    print('IBS: {:.3}'.format(eval_cox.integrated_brier_score()))
+
+    base_surv_cox = baseline_survival(df_cml[['TIME', 'EVENT']], df_cml['LPH'])
+    eval_cml = EvalSurv(df_cml)
     dindex_cml, lCI_cml, uCI_cml = eval_cml.Dindex()
-    r2_cml = eval_cml.R_squared_D()
     print('D-index ML (95% CI): {:.3}'.format(dindex_cml), ' ({:.3}'.format(lCI_cml), ',  {:.3}'.format(uCI_cml), ")")
-    print('R-squared(D) ML: {:.3}'.format(r2_cml))
+    print('R-squared(D) ML: {:.3}'.format(eval_cml.R_squared_D()))
+    print('Concordance ML: {:.3}'.format(eval_cml.concordance_index()))
+    print('IBS: {:.3}'.format(eval_cox.integrated_brier_score()))
+    
+    
+
     
 
 if __name__ == '__main__':
