@@ -106,7 +106,7 @@ def main():
     print('R-squared(D) ML: {:.5}'.format(eval_cml.R_squared_D()))
     print('Concordance ML: {:.5}'.format(eval_cml.concordance_index()))
     print('Brier: {:.5}'.format(eval_cml.brier_score(1826)))
-    print('IBS: {:.5}'.format(eval_cox.integrated_brier_score()))
+    print('IBS: {:.5}'.format(eval_cml.integrated_brier_score()))
     
     
 
