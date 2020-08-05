@@ -25,8 +25,9 @@ from pdb import set_trace as bp
 class EvalSurv:
     """Class for evaluating predictions.
 
-    Arguments: df {Panda.DataFrame} -- dataframe with columns LPH (log of the partial hazard - linear predictor - from fitted model),
-        TIME and EVENT (events of test set, 1 if event occured and 0 if censored), SURV (predicted survival)
+    Arguments: df {Pandas.DataFrame} -- dataframe with columns LPH (log of the partial hazard - linear predictor - from fitted model),
+        TIME and EVENT (events of test set, 1 if event occured and 0 if censored)
+        base_surv {Pandas.Series} -- baseline survival at different times
     """
 
     def __init__(self, df, base_surv=None):
