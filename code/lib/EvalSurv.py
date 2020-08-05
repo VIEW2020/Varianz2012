@@ -108,7 +108,7 @@ class EvalSurv:
     ###########################################################################################################
     
     def concordance_index(self):    
-        return concordance_index(self.df['TIME'], self.df['LPH'], self.df['EVENT'])
+        return concordance_index(self.df['TIME'], -self.df['LPH'], self.df['EVENT'])
     
     
     

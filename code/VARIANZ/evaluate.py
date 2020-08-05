@@ -92,19 +92,21 @@ def main():
 
     base_surv_cox = baseline_survival(df_cox[['TIME', 'EVENT']], df_cox['LPH'])
     eval_cox = EvalSurv(df_cox, base_surv_cox)
-    dindex_cox, lCI_cox, uCI_cox = eval_cox.Dindex()
-    print('D-index Cox (95% CI): {:.3}'.format(dindex_cox), ' ({:.3}'.format(lCI_cox), ',  {:.3}'.format(uCI_cox), ")")
-    print('R-squared(D) Cox: {:.3}'.format(eval_cox.R_squared_D()))
-    print('Concordance Cox: {:.3}'.format(eval_cox.concordance_index()))
-    print('IBS: {:.3}'.format(eval_cox.integrated_brier_score()))
+    d_index_cox, lCI_cox, uCI_cox = eval_cox.D_index()
+    print('D-index Cox (95% CI): {:.5}'.format(d_index_cox), ' ({:.5}'.format(lCI_cox), ',  {:.5}'.format(uCI_cox), ")")
+    print('R-squared(D) Cox: {:.5}'.format(eval_cox.R_squared_D()))
+    print('Concordance Cox: {:.5}'.format(eval_cox.concordance_index()))
+    print('Brier: {:.5}'.format(eval_cox.brier_score(1826)))
+    print('IBS: {:.5}'.format(eval_cox.integrated_brier_score()))
 
-    base_surv_cox = baseline_survival(df_cml[['TIME', 'EVENT']], df_cml['LPH'])
-    eval_cml = EvalSurv(df_cml)
-    dindex_cml, lCI_cml, uCI_cml = eval_cml.Dindex()
-    print('D-index ML (95% CI): {:.3}'.format(dindex_cml), ' ({:.3}'.format(lCI_cml), ',  {:.3}'.format(uCI_cml), ")")
-    print('R-squared(D) ML: {:.3}'.format(eval_cml.R_squared_D()))
-    print('Concordance ML: {:.3}'.format(eval_cml.concordance_index()))
-    print('IBS: {:.3}'.format(eval_cox.integrated_brier_score()))
+    base_surv_cml = baseline_survival(df_cml[['TIME', 'EVENT']], df_cml['LPH'])
+    eval_cml = EvalSurv(df_cml, base_surv_cml)
+    d_index_cml, lCI_cml, uCI_cml = eval_cml.D_index()
+    print('D-index ML (95% CI): {:.5}'.format(d_index_cml), ' ({:.5}'.format(lCI_cml), ',  {:.5}'.format(uCI_cml), ")")
+    print('R-squared(D) ML: {:.5}'.format(eval_cml.R_squared_D()))
+    print('Concordance ML: {:.5}'.format(eval_cml.concordance_index()))
+    print('Brier: {:.5}'.format(eval_cml.brier_score(1826)))
+    print('IBS: {:.5}'.format(eval_cox.integrated_brier_score()))
     
     
 
