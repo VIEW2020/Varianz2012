@@ -22,18 +22,6 @@ def load_obj(name):
         return pkl.load(f)
 
 
-def baseline_survival(df, log_partial_hazard):
-    df['PARTIAL_HAZARD'] = np.exp(log_partial_hazard)
-    df = df[['TIME', 'EVENT', 'PARTIAL_HAZARD']]
-    df = df.groupby(['TIME']).sum().sort_index(ascending=False)
-    df['CUM_PARTIAL_HAZARD'] = df['PARTIAL_HAZARD'].cumsum()
-    df = df[df['EVENT']>0]
-    df['ALPHA'] = np.exp(-df['EVENT']/df['CUM_PARTIAL_HAZARD'])
-    df.sort_index(inplace=True)
-    df['S0'] = df['ALPHA'].cumprod()
-    return df['S0']
-
-
 def log(model_name, concordance, brier, nbll, hp):
     df = pd.DataFrame({'model_name': model_name,
                        'np_seed': hp.np_seed,

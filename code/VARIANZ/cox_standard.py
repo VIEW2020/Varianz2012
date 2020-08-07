@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 from deep_survival import *
 from utils import *
+from EvalSurv import EvalSurv
 import feather
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -47,18 +48,13 @@ def main():
     cph = CoxPHFitter()
     cph.fit(df, duration_col='TIME', event_col='EVENT', show_progress=True, step_size=0.5)
     cph.print_summary()
-    #males: 0.975175739250251, females: 0.9887093948160717
-    base_surv = baseline_survival(df, np.dot(x-cph._norm_mean.values, cph.params_)).loc[1826]
-    print(base_surv)
     print('done')
         
     ###################################################################
     
     print('Predicting...')
-    lph = np.dot(x-cph._norm_mean.values, cph.params_)
-    risk = 100*(1-np.power(base_surv, np.exp(lph)))
-    df_cox = pd.DataFrame({'LPH': lph, 'RISK': risk})
-    
+    es = EvalSurv(pd.DataFrame({'LPH': np.dot(x-cph._norm_mean.values, cph.params_), 'TIME': time, 'EVENT': event}))
+    df_cox = pd.DataFrame({'LPH': es.df['LPH'], 'RISK_PERC': es.get_risk_perc(1826)})
     df_cox.to_feather(hp.results_dir + 'df_cox_' + hp.gender + '.feather')
 
 if __name__ == '__main__':

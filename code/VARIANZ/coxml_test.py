@@ -27,6 +27,7 @@ from pycox.models import CoxCC, CoxTime
 from deep_survival import *
 from utils import *
 from rnn_models import *
+from EvalSurv import EvalSurv
 from hyperparameters import Hyperparameters
 
 from os import listdir
