@@ -22,8 +22,8 @@ def main():
     hp = Hyperparameters()
 
     data = np.load(hp.data_pp_dir + 'data_arrays_' + hp.gender + '.npz')
-    df = feather.read_dataframe(hp.data_pp_dir + 'df_index_person_' + hp.gender + '.feather')[['VSIMPLE_INDEX_MASTER', 'DHB_code', 'DHB_name']]
-    df_geo = feather.read_dataframe(hp.data_dir + 'Py_VARIANZ_2012_v3-1_GEO.feather')
+    df = feather.read_dataframe(hp.data_pp_dir + 'df_index_person_' + hp.gender + '.feather')
+    df_geo = feather.read_dataframe(hp.data_dir + 'Py_VARIANZ_2012_v3-1_GEO.feather')[['VSIMPLE_INDEX_MASTER', 'DHB_code', 'DHB_name']]
     df = df.merge(df_geo, how='left', on='VSIMPLE_INDEX_MASTER')
     
     # load predicted risk
@@ -35,11 +35,10 @@ def main():
     df = df[data['fold'] != 99]
     
     # get median risk by DHB
-    bp()
-    df = df.groupby('DHB_code').agg({'RISK': 'np.median', 'DHB_name': 'first'})
+    df = df.groupby('DHB_code').agg({'RISK': 'median', 'DHB_name': 'first'}).reset_index()
     
-
-    
+    # save
+    df.to_csv(hp.results_dir + 'df_dhb_' + hp.gender + '.csv')
 
 
 if __name__ == '__main__':
