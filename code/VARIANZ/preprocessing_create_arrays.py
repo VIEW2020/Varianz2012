@@ -117,6 +117,7 @@ def main():
         print('-----------------------------------------')
         print('Save...')
         np.savez(hp.data_pp_dir + 'data_arrays_' + gender + '.npz', x=x, time=time, event=event, codes=codes, month=month, diagt=diagt, fold=fold)
+        df_index_person.to_feather(hp.data_pp_dir + 'df_index_person_' + gender + '.feather')
         df_index_code.to_feather(hp.data_pp_dir + 'df_index_code_' + gender + '.feather')
         save_obj(list(df.columns), hp.data_pp_dir + 'cols_list.pkl')
 
