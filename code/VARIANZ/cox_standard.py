@@ -9,18 +9,11 @@ sys.path.append('../lib/')
 
 import numpy as np
 import pandas as pd
-from deep_survival import *
-from utils import *
-from EvalSurv import EvalSurv
-import feather
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn_pandas import DataFrameMapper
-from pycox.evaluation import EvalSurv
 from lifelines import CoxPHFitter
+from EvalSurv import EvalSurv
+from utils import *
+import feather
 from hyperparameters import Hyperparameters
-from sklearn import preprocessing
-import lifelines
 
 from pdb import set_trace as bp
 

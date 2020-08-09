@@ -26,9 +26,8 @@ from pdb import set_trace as bp
 class EvalSurv:
     """Class for evaluating survival models.
 
-    Arguments: df {Pandas.DataFrame} -- dataframe with columns LPH (log of the partial hazard - linear predictor - from fitted model),
+    Arguments: df {Pandas.DataFrame} -- dataframe with columns LPH (log of the partial hazard from fitted model),
         TIME and EVENT (events of test set, 1 if event occured and 0 if censored)
-        base_surv {Pandas.Series} -- baseline survival at different times
     """
 
     def __init__(self, df):
@@ -70,7 +69,7 @@ class EvalSurv:
     
     
     def get_risk_perc(self, at_time):
-        return 100 * get_risk(at_time)
+        return 100 * self.get_risk(at_time)
         
 
     ###########################################################################################################
@@ -88,8 +87,8 @@ class EvalSurv:
         dmod = CoxPHFitter()
         dmod.fit(self.df[['Z', 'TIME', 'EVENT']], duration_col='TIME', event_col='EVENT')
         self.D = dmod.params_[0]
-        lCI, uCI = np.exp(dmod.confidence_intervals_.values[0][:])
-        return self.D, lCI, uCI
+        lCI, uCI = dmod.confidence_intervals_.values[0][:]
+        return self.D, (lCI, uCI)
     
 
     def R_squared_D(self):

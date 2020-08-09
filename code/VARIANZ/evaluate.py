@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 from lifelines.utils import concordance_index
 from lifelines import KaplanMeierFitter
 import tqdm
+import statsmodels.stats.api as sms
 
 from hyperparameters import Hyperparameters
 from utils import *
@@ -40,29 +41,72 @@ def main():
     for fold in range(hp.num_folds):
         df_cml.loc[data['fold'] == fold, 'LPH'] = feather.read_dataframe(hp.results_dir + 'df_lph_' + hp.gender + '_fold_' + str(fold) + '.feather')['ENSEMBLE'].values
     
-    # remove validation data
-    df_cox = df_cox[data['fold'] != 99]
-    df_cml = df_cml[data['fold'] != 99]
+    ################################################################################################
+    
+    # evaluation vectors
+    d_index_vec_cox = np.zeros(hp.num_folds)
+    r2_vec_cox = np.zeros(hp.num_folds)
+    concordance_vec_cox = np.zeros(hp.num_folds)
+    ibs_vec_cox = np.zeros(hp.num_folds)
+    auc_vec_cox = np.zeros(hp.num_folds)
+
+    d_index_vec_cml = np.zeros(hp.num_folds)
+    r2_vec_cml = np.zeros(hp.num_folds)
+    concordance_vec_cml = np.zeros(hp.num_folds)
+    ibs_vec_cml = np.zeros(hp.num_folds)
+    auc_vec_cml = np.zeros(hp.num_folds)
     
     # evaluate
-    es_cox = EvalSurv(df_cox)
-    es_cml = EvalSurv(df_cml)
+    for fold in range(hp.num_folds):
+        print('Fold: {}'.format(fold))
+        
+        es_cox = EvalSurv(df_cox.loc[data['fold'] == fold].copy())
+        es_cml = EvalSurv(df_cml.loc[data['fold'] == fold].copy())
 
-    ################################################################################################
+        d_index_vec_cox[fold], _ = es_cox.D_index()
+        r2_vec_cox[fold] = es_cox.R_squared_D()
+        concordance_vec_cox[fold] = es_cox.concordance_index()
+        ibs_vec_cox[fold] = es_cox.integrated_brier_score()
+        auc_vec_cox[fold] = es_cox.auc(1826)
+        
+        d_index_vec_cml[fold], _ = es_cml.D_index()
+        r2_vec_cml[fold] = es_cml.R_squared_D()
+        concordance_vec_cml[fold] = es_cml.concordance_index()
+        ibs_vec_cml[fold] = es_cml.integrated_brier_score()
+        auc_vec_cml[fold] = es_cml.auc(1826)
+    
+    print('R-squared(D) Cox (95% CI): {:.3}'.format(r2_vec_cox.mean()), 
+          ' ({:.3}'.format(sms.DescrStatsW(r2_vec_cox).tconfint_mean()[0]), 
+          ', {:.3}'.format(sms.DescrStatsW(r2_vec_cox).tconfint_mean()[1]), ')')
+    print('D-index Cox (95% CI): {:.3}'.format(d_index_vec_cox.mean()), 
+          ' ({:.3}'.format(sms.DescrStatsW(d_index_vec_cox).tconfint_mean()[0]), 
+          ', {:.3}'.format(sms.DescrStatsW(d_index_vec_cox).tconfint_mean()[1]), ')')
+    print('Concordance Cox (95% CI): {:.3}'.format(concordance_vec_cox.mean()), 
+          ' ({:.3}'.format(sms.DescrStatsW(concordance_vec_cox).tconfint_mean()[0]), 
+          ', {:.3}'.format(sms.DescrStatsW(concordance_vec_cox).tconfint_mean()[1]), ')')
+    print('IBS Cox (95% CI): {:.3}'.format(ibs_vec_cox.mean()), 
+          ' ({:.3}'.format(sms.DescrStatsW(ibs_vec_cox).tconfint_mean()[0]), 
+          ', {:.3}'.format(sms.DescrStatsW(ibs_vec_cox).tconfint_mean()[1]), ')')
+    print('AUC Cox (95% CI): {:.3}'.format(auc_vec_cox.mean()), 
+          ' ({:.3}'.format(sms.DescrStatsW(auc_vec_cox).tconfint_mean()[0]), 
+          ', {:.3}'.format(sms.DescrStatsW(auc_vec_cox).tconfint_mean()[1]), ')')
 
-    d_index_cox, lCI_cox, uCI_cox = es_cox.D_index()
-    print('D-index Cox (95% CI): {:.5}'.format(d_index_cox), ' ({:.5}'.format(lCI_cox), ',  {:.5}'.format(uCI_cox), ")")
-    print('R-squared(D) Cox: {:.5}'.format(es_cox.R_squared_D()))
-    print('Concordance Cox: {:.5}'.format(es_cox.concordance_index()))
-    print('IBS Cox: {:.5}'.format(es_cox.integrated_brier_score()))
-    print('AUC Cox: {:.5}'.format(es_cox.auc(1826)))
+    print('R-squared(D) cml (95% CI): {:.3}'.format(r2_vec_cml.mean()), 
+          ' ({:.3}'.format(sms.DescrStatsW(r2_vec_cml).tconfint_mean()[0]), 
+          ', {:.3}'.format(sms.DescrStatsW(r2_vec_cml).tconfint_mean()[1]), ')')
+    print('D-index cml (95% CI): {:.3}'.format(d_index_vec_cml.mean()), 
+          ' ({:.3}'.format(sms.DescrStatsW(d_index_vec_cml).tconfint_mean()[0]), 
+          ', {:.3}'.format(sms.DescrStatsW(d_index_vec_cml).tconfint_mean()[1]), ')')
+    print('Concordance cml (95% CI): {:.3}'.format(concordance_vec_cml.mean()), 
+          ' ({:.3}'.format(sms.DescrStatsW(concordance_vec_cml).tconfint_mean()[0]), 
+          ', {:.3}'.format(sms.DescrStatsW(concordance_vec_cml).tconfint_mean()[1]), ')')
+    print('IBS cml (95% CI): {:.3}'.format(ibs_vec_cml.mean()), 
+          ' ({:.3}'.format(sms.DescrStatsW(ibs_vec_cml).tconfint_mean()[0]), 
+          ', {:.3}'.format(sms.DescrStatsW(ibs_vec_cml).tconfint_mean()[1]), ')')
+    print('AUC cml (95% CI): {:.3}'.format(auc_vec_cml.mean()), 
+          ' ({:.3}'.format(sms.DescrStatsW(auc_vec_cml).tconfint_mean()[0]), 
+          ', {:.3}'.format(sms.DescrStatsW(auc_vec_cml).tconfint_mean()[1]), ')')
 
-    d_index_cml, lCI_cml, uCI_cml = es_cml.D_index()
-    print('D-index ML (95% CI): {:.5}'.format(d_index_cml), ' ({:.5}'.format(lCI_cml), ',  {:.5}'.format(uCI_cml), ")")
-    print('R-squared(D) ML: {:.5}'.format(es_cml.R_squared_D()))
-    print('Concordance ML: {:.5}'.format(es_cml.concordance_index()))
-    print('IBS ML: {:.5}'.format(es_cml.integrated_brier_score()))
-    print('AUC ML: {:.5}'.format(es_cml.auc(1826)))
     
 if __name__ == '__main__':
     main()
