@@ -12,7 +12,7 @@ The core dataset is the VARIANZ 2012 health contact population. Information from
 End of followup was calculated by first capturing time to first CVD event or death during follow-up (n = 90945). The remaining population without an event (n= 2110750) were eligible for an adjusted end of followup date. This was done using all VARIANZ component: PHO, GSM, PHARMS, NMDS, NAP, and LAB - with each year's records evaluated for the latest contact during the followup period. In effect, a "last contact date" was established during followup. For 96,914 individuals, a last contact date could not be established and therefore, an end of followup could not be determined. These observations we left in the dataset for analysis or removal.
 
 ### Exclusions
-<p>The initial raw VARIANZ dataset contained 4,582,807 individuals. Using the latest primary / secondary mapping provided in the NHI by MoH (August 2019), duplicate ENHIs were removed (where multiple secondary keys were mapped to a single primary key). The following steps were taken to remove cohort members deemed necessary to ensure quality. In total, 2,381,112 people were removed. An additional 96,914 were flagged for removal as they did not have a valid last contact date and could not be censored. The study consists of 5 years of follow-up with the end-of-study at 2017-12-31.</p>
+<p>The initial raw VARIANZ dataset contained 4,582,809 individuals. Using the latest primary / secondary mapping provided in the NHI by MoH (August 2019), duplicate ENHIs were removed (where multiple secondary keys were mapped to a single primary key). The following steps were taken to remove cohort members deemed necessary to ensure quality. In total, 2,381,112 people were removed. An additional 96,914 were flagged for removal as they did not have a valid last contact date and could not be censored. The study consists of 5 years of follow-up with the end-of-study at 2017-12-31.</p>
 
 <table>
   <colgroup>
@@ -31,7 +31,7 @@ End of followup was calculated by first capturing time to first CVD event or dea
     <tr>
       <td class="numberingColumn">1</td>
       <td>Remove people outside of 30 - 74 years of age</td>
-      <td>-2170506</td>
+      <td>-2170508</td>
     </tr>
     <tr>
       <td class="numberingColumn" colspan="1">2</td>
