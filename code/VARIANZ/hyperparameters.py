@@ -14,7 +14,7 @@ class Hyperparameters:
     
         ### General #########################################################
         
-        self.gender = 'females'
+        self.gender = 'males'
         self.min_count = 200 # codes whose occurrence is less than min_count are encoded as OTHER
         self.num_folds = 5
         self.num_trials = 10

@@ -17,6 +17,13 @@ from tqdm import tqdm
 
 from pdb import set_trace as bp
   
+
+def percentile(n):
+    def percentile_(x):
+        return np.percentile(x, n)
+    percentile_.__name__ = 'percentile_%s' % n
+    return percentile_
+
   
 def main():
     hp = Hyperparameters()
@@ -35,7 +42,7 @@ def main():
     df = df[data['fold'] != 99]
     
     # get median risk by DHB
-    df = df.groupby('DHB_code').agg({'RISK': 'median', 'DHB_name': 'first'}).reset_index()
+    df = df.groupby('DHB_code').agg({'RISK': [percentile(50), percentile(80)], 'DHB_name': 'first'}).reset_index()
     
     # save
     df.to_csv(hp.results_dir + 'df_dhb_' + hp.gender + '.csv')
