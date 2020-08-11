@@ -37,9 +37,7 @@ def main():
 
     # load log partial hazards
     df_cox['LPH'] = feather.read_dataframe(hp.results_dir + 'df_cox_' + hp.gender + '.feather')['LPH']
-    df_cml['LPH'] = 0
-    for fold in range(hp.num_folds):
-        df_cml.loc[data['fold'] == fold, 'LPH'] = feather.read_dataframe(hp.results_dir + 'df_lph_' + hp.gender + '_fold_' + str(fold) + '.feather')['ENSEMBLE'].values
+    df_cml['LPH'] = feather.read_dataframe(hp.results_dir + 'df_cml_' + hp.gender + '.feather')['LPH']
     
     ################################################################################################
     
@@ -63,49 +61,39 @@ def main():
         es_cox = EvalSurv(df_cox.loc[data['fold'] == fold].copy())
         es_cml = EvalSurv(df_cml.loc[data['fold'] == fold].copy())
 
-        d_index_vec_cox[fold], _ = es_cox.D_index()
         r2_vec_cox[fold] = es_cox.R_squared_D()
+        d_index_vec_cox[fold], _ = es_cox.D_index()
         concordance_vec_cox[fold] = es_cox.concordance_index()
         ibs_vec_cox[fold] = es_cox.integrated_brier_score()
         auc_vec_cox[fold] = es_cox.auc(1826)
         
-        d_index_vec_cml[fold], _ = es_cml.D_index()
         r2_vec_cml[fold] = es_cml.R_squared_D()
+        d_index_vec_cml[fold], _ = es_cml.D_index()
         concordance_vec_cml[fold] = es_cml.concordance_index()
         ibs_vec_cml[fold] = es_cml.integrated_brier_score()
         auc_vec_cml[fold] = es_cml.auc(1826)
-    
-    print('R-squared(D) Cox (95% CI): {:.3}'.format(r2_vec_cox.mean()), 
-          ' ({:.3}'.format(sms.DescrStatsW(r2_vec_cox).tconfint_mean()[0]), 
-          ', {:.3}'.format(sms.DescrStatsW(r2_vec_cox).tconfint_mean()[1]), ')')
-    print('D-index Cox (95% CI): {:.3}'.format(d_index_vec_cox.mean()), 
-          ' ({:.3}'.format(sms.DescrStatsW(d_index_vec_cox).tconfint_mean()[0]), 
-          ', {:.3}'.format(sms.DescrStatsW(d_index_vec_cox).tconfint_mean()[1]), ')')
-    print('Concordance Cox (95% CI): {:.3}'.format(concordance_vec_cox.mean()), 
-          ' ({:.3}'.format(sms.DescrStatsW(concordance_vec_cox).tconfint_mean()[0]), 
-          ', {:.3}'.format(sms.DescrStatsW(concordance_vec_cox).tconfint_mean()[1]), ')')
-    print('IBS Cox (95% CI): {:.3}'.format(ibs_vec_cox.mean()), 
-          ' ({:.3}'.format(sms.DescrStatsW(ibs_vec_cox).tconfint_mean()[0]), 
-          ', {:.3}'.format(sms.DescrStatsW(ibs_vec_cox).tconfint_mean()[1]), ')')
-    print('AUC Cox (95% CI): {:.3}'.format(auc_vec_cox.mean()), 
-          ' ({:.3}'.format(sms.DescrStatsW(auc_vec_cox).tconfint_mean()[0]), 
-          ', {:.3}'.format(sms.DescrStatsW(auc_vec_cox).tconfint_mean()[1]), ')')
 
-    print('R-squared(D) cml (95% CI): {:.3}'.format(r2_vec_cml.mean()), 
-          ' ({:.3}'.format(sms.DescrStatsW(r2_vec_cml).tconfint_mean()[0]), 
-          ', {:.3}'.format(sms.DescrStatsW(r2_vec_cml).tconfint_mean()[1]), ')')
-    print('D-index cml (95% CI): {:.3}'.format(d_index_vec_cml.mean()), 
-          ' ({:.3}'.format(sms.DescrStatsW(d_index_vec_cml).tconfint_mean()[0]), 
-          ', {:.3}'.format(sms.DescrStatsW(d_index_vec_cml).tconfint_mean()[1]), ')')
-    print('Concordance cml (95% CI): {:.3}'.format(concordance_vec_cml.mean()), 
-          ' ({:.3}'.format(sms.DescrStatsW(concordance_vec_cml).tconfint_mean()[0]), 
-          ', {:.3}'.format(sms.DescrStatsW(concordance_vec_cml).tconfint_mean()[1]), ')')
-    print('IBS cml (95% CI): {:.3}'.format(ibs_vec_cml.mean()), 
-          ' ({:.3}'.format(sms.DescrStatsW(ibs_vec_cml).tconfint_mean()[0]), 
-          ', {:.3}'.format(sms.DescrStatsW(ibs_vec_cml).tconfint_mean()[1]), ')')
-    print('AUC cml (95% CI): {:.3}'.format(auc_vec_cml.mean()), 
-          ' ({:.3}'.format(sms.DescrStatsW(auc_vec_cml).tconfint_mean()[0]), 
-          ', {:.3}'.format(sms.DescrStatsW(auc_vec_cml).tconfint_mean()[1]), ')')
+    r2_mean, (r2_lci, r2_uci) = r2_vec_cox.mean(), sms.DescrStatsW(r2_vec_cox).tconfint_mean()
+    print('R-squared(D) Cox (95% CI): {:.3} ({:.3}, {:.3})'.format(r2_mean, r2_lci, r2_uci)
+    d_index_mean, (d_index_lci, d_index_uci) = d_index_vec_cox.mean(), sms.DescrStatsW(d_index_vec_cox).tconfint_mean()
+    print('D-index Cox (95% CI): {:.3} ({:.3}, {:.3})'.format(d_index_mean, d_index_lci, d_index_uci)
+    concordance_mean, (concordance_lci, concordance_uci) = concordance_vec_cox.mean(), sms.DescrStatsW(concordance_vec_cox).tconfint_mean()
+    print('Concordance Cox (95% CI): {:.3} ({:.3}, {:.3})'.format(concordance_mean, concordance_lci, concordance_uci)
+    ibs_mean, (ibs_lci, ibs_uci) = ibs_vec_cox.mean(), sms.DescrStatsW(ibs_vec_cox).tconfint_mean()
+    print('IBS Cox (95% CI): {:.3} ({:.3}, {:.3})'.format(ibs_mean, ibs_lci, ibs_uci)
+    auc_mean, (auc_lci, auc_uci) = auc_vec_cox.mean(), sms.DescrStatsW(auc_vec_cox).tconfint_mean()
+    print('AUC Cox (95% CI): {:.3} ({:.3}, {:.3})'.format(auc_mean, auc_lci, auc_uci)
+
+    r2_mean, (r2_lci, r2_uci) = r2_vec_cml.mean(), sms.DescrStatsW(r2_vec_cml).tconfint_mean()
+    print('R-squared(D) CML (95% CI): {:.3} ({:.3}, {:.3})'.format(r2_mean, r2_lci, r2_uci)
+    d_index_mean, (d_index_lci, d_index_uci) = d_index_vec_cml.mean(), sms.DescrStatsW(d_index_vec_cml).tconfint_mean()
+    print('D-index CML (95% CI): {:.3} ({:.3}, {:.3})'.format(d_index_mean, d_index_lci, d_index_uci)
+    concordance_mean, (concordance_lci, concordance_uci) = concordance_vec_cml.mean(), sms.DescrStatsW(concordance_vec_cml).tconfint_mean()
+    print('Concordance CML (95% CI): {:.3} ({:.3}, {:.3})'.format(concordance_mean, concordance_lci, concordance_uci)
+    ibs_mean, (ibs_lci, ibs_uci) = ibs_vec_cml.mean(), sms.DescrStatsW(ibs_vec_cml).tconfint_mean()
+    print('IBS CML (95% CI): {:.3} ({:.3}, {:.3})'.format(ibs_mean, ibs_lci, ibs_uci)
+    auc_mean, (auc_lci, auc_uci) = auc_vec_cml.mean(), sms.DescrStatsW(auc_vec_cml).tconfint_mean()
+    print('AUC CML (95% CI): {:.3} ({:.3}, {:.3})'.format(auc_mean, auc_lci, auc_uci)
 
     
 if __name__ == '__main__':

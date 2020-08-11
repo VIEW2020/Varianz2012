@@ -12,10 +12,6 @@ import pandas as pd
 import feather
 import pickle as pkl
 
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn_pandas import DataFrameMapper
-
 import torch
 import torch.utils.data as utils
 import torch.optim as optim
@@ -39,7 +35,6 @@ def main():
     # Load data
     print('Load data...')
     hp = Hyperparameters()
-    data = np.load(hp.data_pp_dir + 'data_arrays_' + hp.gender + '.npz')
     df_index_code = feather.read_dataframe(hp.data_pp_dir + 'df_index_code_' + hp.gender + '.feather')
     
     print('Create list of codes...')
@@ -107,7 +102,7 @@ def main():
             diagt_b = torch.zeros((1, 1), device=hp.device)
             risk_baseline = net(x_b, codes_b, month_b, diagt_b).detach().cpu().numpy().squeeze()
 
-        # Compute risk for masked standard columns
+        # Compute risk for standard columns
         for j in tqdm(range(num_cols)):
             with torch.no_grad():
                 x_b = torch.zeros((1, num_cols), device=hp.device)
@@ -120,7 +115,7 @@ def main():
             # Store
             log_hr_columns[j, i] = risk_mod
 
-        # Compute risk for masked embeddings
+        # Compute risk for embeddings
         for j in tqdm(range(num_embeddings)):
             with torch.no_grad():
                 x_b = torch.zeros((1, num_cols), device=hp.device)

@@ -12,10 +12,6 @@ import pandas as pd
 import feather
 import pickle as pkl
 
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn_pandas import DataFrameMapper
-
 import torch
 import torch.utils.data as utils
 import torch.optim as optim
@@ -34,42 +30,49 @@ def objective(trial, data, df_index_code):
     # hp = Hyperparameters(trial)
     hp = Hyperparameters()
     print(trial.params)
-    
-    x_trn = data['x_trn']
-    time_trn = data['time_trn']
-    event_trn = data['event_trn']
-    codes_trn = data['codes_trn']
-    month_trn = data['month_trn']
-    diagt_trn = data['diagt_trn']
-    case_idx_trn = data['case_idx_trn']
-    max_idx_control_trn = data['max_idx_control_trn']
-    
-    x_val = data['x_val']
-    time_val = data['time_val']
-    event_val = data['event_val']
-    codes_val = data['codes_val']
-    month_val = data['month_val']
-    diagt_val = data['diagt_val']
-    case_idx_val = data['case_idx_val']
-    max_idx_control_val = data['max_idx_control_val']
+
+    idx_trn = (data['fold'] != 99)
+    x_trn = data['x'][idx_trn]
+    time_trn = data['time'][idx_trn]
+    event_trn = data['event'][idx_trn]
+    codes_trn = data['codes'][idx_trn]
+    month_trn = data['month'][idx_trn]
+    diagt_trn = data['diagt'][idx_trn]
+
+
+    idx_val = (data['fold'] == 99)
+    x_val = data['x'][idx_val]
+    time_val = data['time'][idx_val]
+    event_val = data['event'][idx_val]
+    codes_val = data['codes'][idx_val]
+    month_val = data['month'][idx_val]
+    diagt_val = data['diagt'][idx_val]
+
+    # could move this outside objective function for efficiency
+    sort_idx_trn, case_idx_trn, max_idx_control_trn = sort_and_case_indices(x_trn, time_trn, event_trn)
+    sort_idx_val, case_idx_val, max_idx_control_val = sort_and_case_indices(x_val, time_val, event_val)
+
+    x_trn, time_trn, event_trn = x_trn[sort_idx_trn], time_trn[sort_idx_trn], event_trn[sort_idx_trn]
+    codes_trn, month_trn, diagt_trn = codes_trn[sort_idx_trn], month_trn[sort_idx_trn], diagt_trn[sort_idx_trn]
+
+    x_val, time_val, event_val = x_val[sort_idx_val], time_val[sort_idx_val], event_val[sort_idx_val]
+    codes_val, month_val, diagt_val = codes_val[sort_idx_val], month_val[sort_idx_val], diagt_val[sort_idx_val]
     
     ####################################################################################################### 
 
-    #_ = torch.manual_seed(hp.torch_seed)
-
     print('Create data loaders and tensors...')
     case_trn = utils.TensorDataset(torch.from_numpy(x_trn[case_idx_trn]),
-                                torch.from_numpy(time_trn[case_idx_trn]),
-                                torch.from_numpy(max_idx_control_trn),
-                                torch.from_numpy(codes_trn[case_idx_trn]),
-                                torch.from_numpy(month_trn[case_idx_trn]),
-                                torch.from_numpy(diagt_trn[case_idx_trn]))
+                                   torch.from_numpy(time_trn[case_idx_trn]),
+                                   torch.from_numpy(max_idx_control_trn),
+                                   torch.from_numpy(codes_trn[case_idx_trn]),
+                                   torch.from_numpy(month_trn[case_idx_trn]),
+                                   torch.from_numpy(diagt_trn[case_idx_trn]))
     case_val = utils.TensorDataset(torch.from_numpy(x_val[case_idx_val]),
-                                torch.from_numpy(time_val[case_idx_val]),
-                                torch.from_numpy(max_idx_control_val),
-                                torch.from_numpy(codes_val[case_idx_val]),
-                                torch.from_numpy(month_val[case_idx_val]),
-                                torch.from_numpy(diagt_val[case_idx_val]))
+                                   torch.from_numpy(time_val[case_idx_val]),
+                                   torch.from_numpy(max_idx_control_val),
+                                   torch.from_numpy(codes_val[case_idx_val]),
+                                   torch.from_numpy(month_val[case_idx_val]),
+                                   torch.from_numpy(diagt_val[case_idx_val]))
 
     x_trn, x_val = torch.from_numpy(x_trn), torch.from_numpy(x_val)
     time_trn, time_val = torch.from_numpy(time_trn), torch.from_numpy(time_val)
@@ -126,6 +129,7 @@ def main():
     
     print('Save...')
     save_obj(study, pp.log_dir + 'study_' + pp.gender + '.pkl')
+
 
 if __name__ == '__main__':
     main()

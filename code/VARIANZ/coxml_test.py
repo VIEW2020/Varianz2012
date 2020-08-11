@@ -12,17 +12,10 @@ import pandas as pd
 import feather
 import pickle as pkl
 
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn_pandas import DataFrameMapper
-
 import torch
 import torch.utils.data as utils
 import torch.optim as optim
 import torch.nn.functional as F
-
-from pycox.evaluation import EvalSurv
-from pycox.models import CoxCC, CoxTime
 
 from deep_survival import *
 from utils import *
@@ -43,6 +36,10 @@ def main():
     df_index_code = feather.read_dataframe(hp.data_pp_dir + 'df_index_code_' + hp.gender + '.feather')
     cols_list = load_obj(hp.data_pp_dir + 'cols_list.pkl')
     
+    # complete output data frame with predicted risk
+    num = data['event'].shape[0]
+    df_cml = pd.DataFrame({'LHP': np.zeros(num), 'RISK_PERC': np.zeros(num)})
+    
     print('Test on each fold...')
     for fold in range(hp.num_folds):
         print('Fold: {}'.format(fold))
@@ -53,7 +50,7 @@ def main():
         month = data['month'][idx]
         diagt = data['diagt'][idx]
 
-        df = pd.DataFrame({'TIME': data['time'][idx], 'EVENT': data['event'][idx]})
+        df_fold = pd.DataFrame({'TIME': data['time'][idx], 'EVENT': data['event'][idx]})
 
         ####################################################################################################### 
 
@@ -70,9 +67,7 @@ def main():
         # Trained models
         tmp = listdir(hp.log_dir + 'fold_' + str(fold) + '/')
         models = [i for i in tmp if '.pt' in i]
-        base_surv_vec = np.zeros((1, len(models)))
         lph_matrix = np.zeros((x.shape[0], len(models)))
-        risk_matrix = np.zeros((x.shape[0], len(models)))
 
         for i in range(len(models)):
             print('Model {}'.format(models[i]))
@@ -87,24 +82,19 @@ def main():
                     x, codes, month, diagt = x.to(hp.device), codes.to(hp.device), month.to(hp.device), diagt.to(hp.device)
                     log_partial_hazard = np.append(log_partial_hazard, net(x, codes, month, diagt).detach().cpu().numpy())
             lph_matrix[:, i] = log_partial_hazard
-            base_surv_vec[0, i] = baseline_survival(df, log_partial_hazard).loc[1826]
-            risk_matrix[:, i] = 100*(1-np.power(base_surv_vec[0, i], np.exp(log_partial_hazard)))
-
-        df_base_surv = pd.DataFrame(base_surv_vec, columns=models)
-        df_lph = pd.DataFrame(lph_matrix, columns=models)
-        df_cml = pd.DataFrame(risk_matrix, columns=models)
 
         print('Ensemble...')
-        lph_ensemble = lph_matrix.mean(axis=1)
-        df_lph['ENSEMBLE'] = lph_ensemble
-        base_surv_ensemble = baseline_survival(df, lph_ensemble).loc[1826]
-        df_base_surv['ENSEMBLE'] = base_surv_ensemble        
-        df_cml['ENSEMBLE'] = 100*(1-np.power(base_surv_ensemble, np.exp(lph_ensemble)))
+        df_lph = pd.DataFrame(lph_matrix, columns=models)
+        df_fold['LPH'] = lph_matrix.mean(axis=1)
+        es = EvalSurv(df_fold)
+        df_cml.loc[idx, 'LHP'] = es.df['LPH']
+        df_cml.loc[idx, 'RISK_PERC'] = es.get_risk_perc(1826)
         
-        print('Saving...')
-        df_base_surv.to_feather(hp.results_dir + 'df_base_surv_' + hp.gender + '_fold_' + str(fold) + '.feather')
+        print('Saving log proportional hazards for fold...')
         df_lph.to_feather(hp.results_dir + 'df_lph_' + hp.gender + '_fold_' + str(fold) + '.feather')
-        df_cml.to_feather(hp.results_dir + 'df_cml_' + hp.gender + '_fold_' + str(fold) + '.feather')
+    
+    print('Saving all...')
+    df_cml.to_feather(hp.results_dir + 'df_cml_' + hp.gender + '.feather')
 
 
 if __name__ == '__main__':

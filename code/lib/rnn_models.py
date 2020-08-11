@@ -92,9 +92,9 @@ class NetRNN(nn.Module):
         return x
 
 
-class NetRNN_Interpret(nn.Module):
+class NetRNN_Minimal(nn.Module):
     def __init__(self, num_input, num_embeddings, hp):
-        super(NetRNN_Interpret, self).__init__()
+        super(NetRNN_Minimal, self).__init__()
         # Parameters ######################################################################################################################
         self.num_months_hx = hp.num_months_hx-1
         self.embedding_dim = hp.embedding_dim

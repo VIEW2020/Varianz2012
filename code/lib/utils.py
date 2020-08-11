@@ -22,21 +22,18 @@ def load_obj(name):
         return pkl.load(f)
 
 
-def log(model_name, concordance, brier, nbll, hp):
-    df = pd.DataFrame({'model_name': model_name,
+def log(hp, r2, d_index, concordance, ibs, auc):
+    df = pd.DataFrame({'model_name': hp.model_name,
                        'np_seed': hp.np_seed,
                        'torch_seed': hp.torch_seed,
-                       'min_count': hp.min_count,
-                       'nonprop_hazards': hp.nonprop_hazards,
                        'batch_size': hp.batch_size,
                        'max_epochs': hp.max_epochs,
-                       'patience': hp.patience,
-                       'embedding_dim': hp.embedding_dim,
                        'num_months_hx': hp.num_months_hx,
-                       'sample_comp_bh': hp.sample_comp_bh,
+                       'r2': r2,
+                       'd_index': d_index,
                        'concordance': concordance,
-                       'brier': brier,
-                       'nbll': nbll},
+                       'ibs': ibs,
+                       'auc': auc},
                        index=[0])
     with open(hp.data_dir + 'logfile.csv', 'a', newline='\n') as f:
         df.to_csv(f, mode='a', index=False, header=(not f.tell()))

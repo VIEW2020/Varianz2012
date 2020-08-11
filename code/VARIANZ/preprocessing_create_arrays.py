@@ -42,7 +42,6 @@ def main():
         he['TYPE'] = 1
         
         print('-----------------------------------------')
-
         # numerical index for each person
         df.reset_index(drop=True, inplace=True)
         df_index_person = df['VSIMPLE_INDEX_MASTER'].reset_index().rename(columns={'index': 'INDEX_PERSON'})
@@ -81,8 +80,9 @@ def main():
         codes[ac['INDEX_PERSON'].values, ac['COUNT'].values] = ac['INDEX_CODE'].values
         month[ac['INDEX_PERSON'].values, ac['COUNT'].values] = ac['MONTH'].values
         diagt[ac['INDEX_PERSON'].values, ac['COUNT'].values] = ac['DIAG_TYPE'].values
+        
         print('-----------------------------------------')
-        print('Mark validation data...')
+        print('Mark validation data...') # done this way for historical reasons
         df_trn, df_tst = train_test_split(df, test_size=0.1, train_size=0.8, shuffle=True, stratify=df['EVENT'])
         df['VALIDATION'] = True
         df.loc[df_trn.index, 'VALIDATION'] = False

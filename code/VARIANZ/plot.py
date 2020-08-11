@@ -26,11 +26,11 @@ def calibration_plot(df_cox, df_cml, ax=None, **plt_kwargs):
     num_people = len(df_cox.index)
     assert num_people == len(df_cml.index)
     
-    df_cox['QUANTILE'] = pd.qcut(df_cox['RISK'], q=10, labels=list(range(10)))
-    df_cml['QUANTILE'] = pd.qcut(df_cml['RISK'], q=10, labels=list(range(10)))
+    df_cox['QUANTILE'] = pd.qcut(df_cox['RISK_PERC'], q=10, labels=list(range(10)))
+    df_cml['QUANTILE'] = pd.qcut(df_cml['RISK_PERC'], q=10, labels=list(range(10)))
     
-    df_cox = df_cox.groupby('QUANTILE').agg({'RISK':'mean', 'EVENT':'sum'})
-    df_cml = df_cml.groupby('QUANTILE').agg({'RISK':'mean', 'EVENT':'sum'})
+    df_cox = df_cox.groupby('QUANTILE').agg({'RISK_PERC':'mean', 'EVENT':'sum'})
+    df_cml = df_cml.groupby('QUANTILE').agg({'RISK_PERC':'mean', 'EVENT':'sum'})
 
     df_cox['EVENT_PERC'] = df_cox['EVENT']/num_people*1000
     df_cml['EVENT_PERC'] = df_cml['EVENT']/num_people*1000
@@ -38,12 +38,12 @@ def calibration_plot(df_cox, df_cml, ax=None, **plt_kwargs):
     df_cox.reset_index(inplace=True)
     df_cml.reset_index(inplace=True)
     
-    ax.scatter(df_cox['EVENT_PERC'], df_cox['RISK'], c='lightcoral')
-    ax.scatter(df_cml['EVENT_PERC'], df_cml['RISK'], c='cornflowerblue')
+    ax.scatter(df_cox['EVENT_PERC'], df_cox['RISK_PERC'], c='lightcoral')
+    ax.scatter(df_cml['EVENT_PERC'], df_cml['RISK_PERC'], c='cornflowerblue')
 
     ax.legend(['CVD Equations', 'Deep Learning'])
 
-    lim = max([df_cox['EVENT_PERC'].max(), df_cox['RISK'].max(), df_cml['EVENT_PERC'].max(), df_cml['RISK'].max()])+0.5
+    lim = max([df_cox['EVENT_PERC'].max(), df_cox['RISK_PERC'].max(), df_cml['EVENT_PERC'].max(), df_cml['RISK_PERC'].max()])+0.5
     ax.set_xlim(0, lim)
     ax.set_ylim(0, lim)
     ax.plot([0, lim], [0, lim], color = 'black', linewidth = 0.5)
@@ -61,8 +61,8 @@ def discrimination_plot(df_cox, df_cml, ax=None, **plt_kwargs):
     num_people = len(df_cox.index)
     assert num_people == len(df_cml.index)
     
-    df_cox['QUANTILE'] = pd.qcut(df_cox['RISK'], q=10, labels=list(range(10)))
-    df_cml['QUANTILE'] = pd.qcut(df_cml['RISK'], q=10, labels=list(range(10)))
+    df_cox['QUANTILE'] = pd.qcut(df_cox['RISK_PERC'], q=10, labels=list(range(10)))
+    df_cml['QUANTILE'] = pd.qcut(df_cml['RISK_PERC'], q=10, labels=list(range(10)))
     
     df_cox = df_cox.groupby('QUANTILE').agg({'EVENT':'sum'})
     df_cml = df_cml.groupby('QUANTILE').agg({'EVENT':'sum'})
@@ -105,10 +105,8 @@ def main():
     df_cml['EVENT'] = event
     
     # load predicted risk
-    df_cox['RISK'] = feather.read_dataframe(hp.results_dir + 'df_cox_' + hp.gender + '.feather')['RISK_PERC']
-    df_cml['RISK'] = 0
-    for fold in range(hp.num_folds):
-        df_cml.loc[data['fold'] == fold, 'RISK'] = feather.read_dataframe(hp.results_dir + 'df_cml_' + hp.gender + '_fold_' + str(fold) + '.feather')['ENSEMBLE'].values
+    df_cox['RISK_PERC'] = feather.read_dataframe(hp.results_dir + 'df_cox_' + hp.gender + '.feather')['RISK_PERC']
+    df_cml['RISK_PERC'] = feather.read_dataframe(hp.results_dir + 'df_cml_' + hp.gender + '.feather')['RISK_PERC']
     
     # remove validation data
     df_cox = df_cox[data['fold'] != 99]

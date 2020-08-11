@@ -19,6 +19,7 @@ import torch.nn.functional as F
 from deep_survival import *
 from utils import *
 from rnn_models import *
+from EvalSurv import EvalSurv
 from hyperparameters import Hyperparameters
 
 from datetime import datetime
@@ -50,11 +51,11 @@ def main():
         
         print('Create data loaders and tensors...')
         case = utils.TensorDataset(torch.from_numpy(x[case_idx]),
-                                torch.from_numpy(time[case_idx]),
-                                torch.from_numpy(max_idx_control),
-                                torch.from_numpy(codes[case_idx]),
-                                torch.from_numpy(month[case_idx]),
-                                torch.from_numpy(diagt[case_idx]))
+                                   torch.from_numpy(time[case_idx]),
+                                   torch.from_numpy(max_idx_control),
+                                   torch.from_numpy(codes[case_idx]),
+                                   torch.from_numpy(month[case_idx]),
+                                   torch.from_numpy(diagt[case_idx]))
 
         x = torch.from_numpy(x)
         time = torch.from_numpy(time)

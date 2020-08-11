@@ -34,15 +34,13 @@ def main():
     df = df.merge(df_geo, how='left', on='VSIMPLE_INDEX_MASTER')
     
     # load predicted risk
-    df['RISK'] = 0
-    for fold in range(hp.num_folds):
-        df.loc[data['fold'] == fold, 'RISK'] = feather.read_dataframe(hp.results_dir + 'df_cml_' + hp.gender + '_fold_' + str(fold) + '.feather')['ENSEMBLE'].values
+    df['RISK_PERC'] = feather.read_dataframe(hp.results_dir + 'df_cml_' + hp.gender + '.feather')['RISK_PERC']
     
     # remove validation data
     df = df[data['fold'] != 99]
     
     # get median risk by DHB
-    df = df.groupby('DHB_code').agg({'RISK': [percentile(50), percentile(80)], 'DHB_name': 'first'}).reset_index()
+    df = df.groupby('DHB_code').agg({'RISK_PERC': [percentile(50), percentile(80)], 'DHB_name': 'first'}).reset_index()
     
     # save
     df.to_csv(hp.results_dir + 'df_dhb_' + hp.gender + '.csv')

@@ -16,7 +16,7 @@ class Hyperparameters:
         
         self.gender = 'males'
         self.min_count = 200 # codes whose occurrence is less than min_count are encoded as OTHER
-        self.num_folds = 5
+        self.num_folds = 10
         self.num_trials = 10
         
         # Data
@@ -73,6 +73,3 @@ class Hyperparameters:
             self.summarize = 'output_max'
             self.learning_rate = 1e-3
         
-        ### Evaluation ######################################################
-        
-        self.best_model = 'final.pt' if self.gender == 'males' else 'final.pt'
