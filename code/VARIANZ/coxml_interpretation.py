@@ -79,7 +79,7 @@ def main():
     models = []
     for fold in range(hp.num_folds):
         tmp = listdir(hp.log_dir + 'fold_' + str(fold) + '/')
-        models = ['fold_' + str(fold) + '/' + i for i in tmp if '.pt' in i]    
+        models = models + ['fold_' + str(fold) + '/' + i for i in tmp if '.pt' in i]    
 
     log_hr_columns = np.zeros((num_cols, len(models)))
     log_hr_embeddings = np.zeros((num_embeddings, len(models)))

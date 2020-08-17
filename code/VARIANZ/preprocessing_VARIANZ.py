@@ -144,8 +144,8 @@ def main():
     df.loc[df['gender_code'], 'nhi_age'] =  df.loc[df['gender_code'], 'nhi_age'] - mean_age_males
     df.loc[~df['gender_code'], 'nhi_age'] =  df.loc[~df['gender_code'], 'nhi_age'] - mean_age_females
     
-    mean_nzdep_males = df.loc[df['gender_code'], 'en_nzdep_q'].mean()
-    mean_nzdep_females = df.loc[~df['gender_code'], 'en_nzdep_q'].mean()    
+    mean_nzdep_males = 3
+    mean_nzdep_females = 3
     df.loc[df['gender_code'], 'en_nzdep_q'] =  df.loc[df['gender_code'], 'en_nzdep_q'] - mean_nzdep_males
     df.loc[~df['gender_code'], 'en_nzdep_q'] =  df.loc[~df['gender_code'], 'en_nzdep_q'] - mean_nzdep_females
         
@@ -155,13 +155,13 @@ def main():
     df['age_X_af'] = df['nhi_age'] * df['hx_af']
     df['bp_X_diabetes'] = df['ph_bp_lowering_prior_6mths'] & df['hx_vdr_diabetes']
     df['antiplat_anticoag_X_diabetes'] = df['ph_antiplat_anticoag_prior_6mths'] & df['hx_vdr_diabetes']
-    df['bp_X_af'] = df['ph_bp_lowering_prior_6mths'] & df['hx_af']
+    df['bp_X_lipid'] = df['ph_bp_lowering_prior_6mths'] & df['ph_lipid_lowering_prior_6mths']
     
     # Keep all VARIANZ risk equations columns
     keep_cols = ['VSIMPLE_INDEX_MASTER', 'nhi_age', 'gender_code', 'en_prtsd_eth', 'en_nzdep_q', 
     'hx_vdr_diabetes', 'hx_af', 'ph_bp_lowering_prior_6mths', 'ph_lipid_lowering_prior_6mths',
     'ph_antiplat_anticoag_prior_6mths', 'age_X_bp', 'age_X_diabetes', 'age_X_af',
-    'bp_X_diabetes', 'antiplat_anticoag_X_diabetes', 'bp_X_af', 'TIME', 'EVENT']
+    'bp_X_diabetes', 'antiplat_anticoag_X_diabetes', 'bp_X_lipid', 'TIME', 'EVENT']
     df = df[keep_cols]
     
     # Save

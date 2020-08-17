@@ -73,7 +73,7 @@ class NetRNN(nn.Module):
             output, hidden = self.rnn(packed)
         if self.summarize == 'hidden':
             hidden = hidden.view(self.num_rnn_layers, 2, -1, self.embedding_dim)[-1] # view(num_layers, num_directions, batch, hidden_size)[last_state]
-            hidden.masked_fill_((seq_length == 0).view(-1, 1), 0)
+            #hidden.masked_fill_((seq_length == 0).view(-1, 1), 0)
             summary_0, summary_1 = hidden[0], hidden[1]
         else:
             output, _ = nn.utils.rnn.pad_packed_sequence(output, batch_first=True)
@@ -84,7 +84,7 @@ class NetRNN(nn.Module):
                 output = output.sum(dim=1)
             elif self.summarize == 'output_avg':
                 output = output.sum(dim=1)/(seq_length.clamp(min=1).view(-1, 1, 1))
-            output.masked_fill_((seq_length == 0).view(-1, 1, 1), 0)
+            #output.masked_fill_((seq_length == 0).view(-1, 1, 1), 0)
             summary_0, summary_1 = output[:,0,:], output[:,1,:]
         # Fully connected layers ##########################################################################################################    
         x = torch.cat((x, summary_0, summary_1), dim=-1)
