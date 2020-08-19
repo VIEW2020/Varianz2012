@@ -32,8 +32,19 @@ def main():
     print('Remove codes associated with less than min_count persons...')
     df_males = df_males[df_males.groupby('chem_id')['VSIMPLE_INDEX_MASTER'].transform('nunique') >= hp.min_count]
     df_females = df_females[df_females.groupby('chem_id')['VSIMPLE_INDEX_MASTER'].transform('nunique') >= hp.min_count]
+
+    print('Code prevalence and most frequent diag type...')
+    info_ph_males = df_males.groupby(['chem_id'])['VSIMPLE_INDEX_MASTER']
+    info_ph_males = info_ph_males.agg(lambda x: x.nunique()).to_frame().reset_index()
+    info_ph_males.rename(columns={'VSIMPLE_INDEX_MASTER': 'PREVALENCE'}, inplace=True)
+    info_ph_females = df_females.groupby(['chem_id'])['VSIMPLE_INDEX_MASTER']
+    info_ph_females = info_ph_females.agg(lambda x: x.nunique()).to_frame().reset_index()
+    info_ph_females.rename(columns={'VSIMPLE_INDEX_MASTER': 'PREVALENCE'}, inplace=True)
     
     print('Save...')
+    info_ph_males.to_feather(hp.data_pp_dir + 'info_ph_males.feather')
+    info_ph_females.to_feather(hp.data_pp_dir + 'info_ph_females.feather')      
+    
     df_males.sort_values(by=['VSIMPLE_INDEX_MASTER', 'dispmonth_index', 'chem_id'], ascending=True, inplace=True)
     df_males.reset_index(drop=True, inplace=True)
     df_males.to_feather(hp.data_pp_dir + 'PH_pp_males.feather')

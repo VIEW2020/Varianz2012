@@ -37,13 +37,17 @@ def main():
     df_males = df_males[df_males.groupby('CLIN_CD_10')['VSIMPLE_INDEX_MASTER'].transform('nunique') >= hp.min_count]
     df_females = df_females[df_females.groupby('CLIN_CD_10')['VSIMPLE_INDEX_MASTER'].transform('nunique') >= hp.min_count]
 
-    print('Most frequent diag type...')
-    most_freq_diagt_males = df_males.groupby(['CLIN_CD_10'])['DIAG_TYPE'].agg(lambda x: pd.Series.mode(x)[0]).to_frame().reset_index()
-    most_freq_diagt_females = df_females.groupby(['CLIN_CD_10'])['DIAG_TYPE'].agg(lambda x: pd.Series.mode(x)[0]).to_frame().reset_index()
+    print('Code prevalence and most frequent diag type...')
+    info_he_males = df_males.groupby(['CLIN_CD_10'])[['VSIMPLE_INDEX_MASTER', 'DIAG_TYPE']]
+    info_he_males = info_he_males.agg({'VSIMPLE_INDEX_MASTER': lambda x: x.nunique(), 'DIAG_TYPE': lambda x: pd.Series.mode(x)[0]}).reset_index()
+    info_he_males.rename(columns={'VSIMPLE_INDEX_MASTER': 'PREVALENCE'}, inplace=True)
+    info_he_females = df_females.groupby(['CLIN_CD_10'])[['VSIMPLE_INDEX_MASTER', 'DIAG_TYPE']]
+    info_he_females = info_he_females.agg({'VSIMPLE_INDEX_MASTER': lambda x: x.nunique(), 'DIAG_TYPE': lambda x: pd.Series.mode(x)[0]}).reset_index()
+    info_he_females.rename(columns={'VSIMPLE_INDEX_MASTER': 'PREVALENCE'}, inplace=True)
     
     print('Save...')
-    most_freq_diagt_males.to_feather(hp.data_pp_dir + 'most_freq_diagt_males.feather')
-    most_freq_diagt_females.to_feather(hp.data_pp_dir + 'most_freq_diagt_females.feather')  
+    info_he_males.to_feather(hp.data_pp_dir + 'info_he_males.feather')
+    info_he_females.to_feather(hp.data_pp_dir + 'info_he_females.feather')  
     
     df_males.sort_values(by=['VSIMPLE_INDEX_MASTER', 'dispmonth_index', 'CLIN_CD_10'], ascending=True, inplace=True)
     df_males.reset_index(drop=True, inplace=True)

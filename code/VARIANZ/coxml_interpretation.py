@@ -53,11 +53,16 @@ def main():
     icd10_lookup.drop_duplicates(subset='CODE', inplace=True)
     icd10_lookup['TYPE'] = 1
 
-    print('Determine most frequent code type...')
+    print('Get prevalences and most frequent he code type...')
     pharm_lookup['DIAG_TYPE'] = 0
-    most_freq_diagt = feather.read_dataframe(hp.data_pp_dir + 'most_freq_diagt_' + hp.gender + '.feather')
-    most_freq_diagt.rename(columns={'CLIN_CD_10': 'CODE'}, inplace=True)
-    icd10_lookup = icd10_lookup.merge(most_freq_diagt,   how='left', on='CODE')
+    info_ph = feather.read_dataframe(hp.data_pp_dir + 'info_ph_' + hp.gender + '.feather')
+    info_ph.rename(columns={'chem_id': 'CODE'}, inplace=True)
+    info_ph['CODE'] = info_ph['CODE'].astype(str)
+    pharm_lookup = pharm_lookup.merge(info_ph, how='left', on='CODE')
+    
+    info_he = feather.read_dataframe(hp.data_pp_dir + 'info_he_' + hp.gender + '.feather')
+    info_he.rename(columns={'CLIN_CD_10': 'CODE'}, inplace=True)
+    icd10_lookup = icd10_lookup.merge(info_he, how='left', on='CODE')
     
     print('Merge with lookup table...')
     lookup = pd.concat([pharm_lookup, icd10_lookup], ignore_index=True, sort=False)

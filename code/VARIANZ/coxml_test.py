@@ -38,7 +38,7 @@ def main():
     
     # complete output data frame with predicted risk
     num = data['event'].shape[0]
-    df_cml = pd.DataFrame({'LHP': np.zeros(num), 'RISK_PERC': np.zeros(num)})
+    df_cml = pd.DataFrame({'LPH': np.zeros(num), 'RISK_PERC': np.zeros(num)})
     
     print('Test on each fold...')
     for fold in range(hp.num_folds):
@@ -87,8 +87,8 @@ def main():
         df_lph = pd.DataFrame(lph_matrix, columns=models)
         df_fold['LPH'] = lph_matrix.mean(axis=1)
         es = EvalSurv(df_fold)
-        df_cml.loc[idx, 'LHP'] = es.df['LPH']
-        df_cml.loc[idx, 'RISK_PERC'] = es.get_risk_perc(1826)
+        df_cml.loc[idx, 'LPH'] = es.df['LPH'].values
+        df_cml.loc[idx, 'RISK_PERC'] = es.get_risk_perc(1826).values
         
         print('Saving log proportional hazards for fold...')
         df_lph.to_feather(hp.results_dir + 'df_lph_' + hp.gender + '_fold_' + str(fold) + '.feather')
