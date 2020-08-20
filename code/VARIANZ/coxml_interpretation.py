@@ -145,6 +145,7 @@ def main():
         
     # Save
     df_index_code.sort_values(by=['TYPE', 'HR'], ascending=False, inplace=True)
+    df_index_code.to_feather(hp.results_dir + 'hr_addcodes_' + hp.gender + '.feather')
     df_index_code.to_csv(hp.results_dir + 'hr_addcodes_' + hp.gender + '.csv', index=False)
     
 if __name__ == '__main__':
