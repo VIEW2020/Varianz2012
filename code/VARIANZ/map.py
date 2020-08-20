@@ -30,20 +30,23 @@ def main():
 
     data = np.load(hp.data_pp_dir + 'data_arrays_' + hp.gender + '.npz')
     df = feather.read_dataframe(hp.data_pp_dir + 'df_index_person_' + hp.gender + '.feather')
-    df_geo = feather.read_dataframe(hp.data_dir + 'Py_VARIANZ_2012_v3-1_GEO.feather')[['VSIMPLE_INDEX_MASTER', 'DHB_code', 'DHB_name']]
+    df_geo = feather.read_dataframe(hp.data_dir + 'Py_VARIANZ_2012_v3-1_GEO.feather')[['VSIMPLE_INDEX_MASTER', 'MB2020_code']]
     df = df.merge(df_geo, how='left', on='VSIMPLE_INDEX_MASTER')
     
     # load predicted risk
     df['RISK_PERC'] = feather.read_dataframe(hp.results_dir + 'df_cml_' + hp.gender + '.feather')['RISK_PERC']
     
+    # set mesh blocks with less than 5 people to NaN
+    df.loc[df.groupby('MB2020_code')['VSIMPLE_INDEX_MASTER'].transform('nunique') < 5, 'RISK_PERC'] = np.nan
+    
     # remove validation data
     df = df[data['fold'] != 99]
     
     # get median risk by DHB
-    df = df.groupby('DHB_code').agg({'RISK_PERC': [percentile(50), percentile(80)], 'DHB_name': 'first'}).reset_index()
+    df = df.groupby('MB2020_code').agg({'RISK_PERC': [percentile(50), percentile(80)]}).reset_index()
     
     # save
-    df.to_csv(hp.results_dir + 'df_dhb_' + hp.gender + '.csv')
+    df.to_csv(hp.results_dir + 'df_mb_' + hp.gender + '.csv')
 
 
 if __name__ == '__main__':
