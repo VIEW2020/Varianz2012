@@ -41,7 +41,7 @@ def main():
     df_cml = pd.DataFrame({'LPH': np.zeros(num), 'RISK_PERC': np.zeros(num)})
     
     print('Test on each fold...')
-    for fold in range(hp.num_folds):
+    for fold in list(range(hp.num_folds)) + [99]:
         print('Fold: {}'.format(fold))
         
         idx = (data['fold'] == fold)
@@ -65,14 +65,21 @@ def main():
         net.eval()
 
         # Trained models
-        tmp = listdir(hp.log_dir + 'fold_' + str(fold) + '/')
-        models = [i for i in tmp if '.pt' in i]
+        if (fold == 99):
+            models = []
+            for k in range(hp.num_folds):
+                tmp = listdir(hp.log_dir + 'fold_' + str(k) + '/')
+                models = models + ['fold_' + str(k) + '/' + i for i in tmp if '.pt' in i]
+            models = [models[i] for i in list(np.arange(5,100,10))]
+        else:
+            tmp = listdir(hp.log_dir + 'fold_' + str(fold) + '/')
+            models = ['fold_' + str(fold) + '/' + i for i in tmp if '.pt' in i]
         lph_matrix = np.zeros((x.shape[0], len(models)))
 
         for i in range(len(models)):
             print('Model {}'.format(models[i]))
             # Restore variables from disk
-            net.load_state_dict(torch.load(hp.log_dir + 'fold_' + str(fold) + '/' + models[i], map_location=hp.device))
+            net.load_state_dict(torch.load(hp.log_dir + models[i], map_location=hp.device))
     
             # Prediction
             log_partial_hazard = np.array([])
