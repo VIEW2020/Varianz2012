@@ -49,6 +49,12 @@ def main():
     es = EvalSurv(pd.DataFrame({'LPH': np.dot(x-cph._norm_mean.values, cph.params_), 'TIME': time, 'EVENT': event}))
     df_cox = pd.DataFrame({'LPH': es.df['LPH'], 'RISK_PERC': es.get_risk_perc(1826)})
     df_cox.to_feather(hp.results_dir + 'df_cox_' + hp.gender + '.feather')
+    
+    print('Saving...')
+    df_summary = cph.summary
+    df_summary['PREDICTOR'] = cols_list
+    df_summary.to_csv(hp.results_dir + 'hr_' + hp.gender + '.csv', index=False)
+    
 
 if __name__ == '__main__':
     main()
