@@ -190,6 +190,7 @@ def main():
     
     print('Plot by ethnicity...')
     fig_cal, ax_cal = plt.subplots(nrows=3, ncols=2, figsize=(16,18))
+    fig_dis, ax_dis = plt.subplots(nrows=3, ncols=2, figsize=(16,18))
     
     #Maori
     condition = df_cox['en_prtsd_eth_2'].astype(bool)
@@ -197,17 +198,13 @@ def main():
     df_cox_red = df_cox.loc[condition].copy()
     df_cml_red = df_cml.loc[condition].copy()
     
-    plt.figure()
-    calibration_plot(df_cox_red, df_cml_red)
-    plt.title('Calibration: Maori Men') if hp.gender == 'males' else plt.title('Calibration: Maori Women')
-    plt.savefig(hp.plots_dir + 'calibration_' + hp.gender + '_eth_maori.png')
-    plt.close()
+    ax_plt = ax_cal[0][0]
+    calibration_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Calibration: Maori Men') if hp.gender == 'males' else ax_plt.title.set_text('Calibration: Maori Women')
 
-    plt.figure()
-    discrimination_plot(df_cox_red, df_cml_red)
-    plt.title('Discrimination: Maori Men') if hp.gender == 'males' else plt.title('Discrimination: Maori Women')
-    plt.savefig(hp.plots_dir + 'discrimination_' + hp.gender + '_eth_maori.png')    
-    plt.close()
+    ax_plt = ax_dis[0][0]
+    discrimination_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Discrimination: Maori Men') if hp.gender == 'males' else ax_plt.title.set_text('Discrimination: Maori Women')
 
     #Pacific
     condition = df_cox['en_prtsd_eth_3'].astype(bool)
@@ -215,17 +212,13 @@ def main():
     df_cox_red = df_cox.loc[condition].copy()
     df_cml_red = df_cml.loc[condition].copy()
     
-    plt.figure()
-    calibration_plot(df_cox_red, df_cml_red)
-    plt.title('Calibration: Pacific Men') if hp.gender == 'males' else plt.title('Calibration: Pacific Women')
-    plt.savefig(hp.plots_dir + 'calibration_' + hp.gender + '_eth_pacific.png')
-    plt.close()
+    ax_plt = ax_cal[0][1]
+    calibration_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Calibration: Pacific Men') if hp.gender == 'males' else ax_plt.title.set_text('Calibration: Pacific Women')
 
-    plt.figure()
-    discrimination_plot(df_cox_red, df_cml_red)
-    plt.title('Discrimination: Pacific Men') if hp.gender == 'males' else plt.title('Discrimination: Pacific Women')
-    plt.savefig(hp.plots_dir + 'discrimination_' + hp.gender + '_eth_pacific.png')      
-    plt.close()
+    ax_plt = ax_dis[0][1]
+    discrimination_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Discrimination: Pacific Men') if hp.gender == 'males' else ax_plt.title.set_text('Discrimination: Pacific Women')
 
     #Indian
     condition = df_cox['en_prtsd_eth_43'].astype(bool)
@@ -233,17 +226,13 @@ def main():
     df_cox_red = df_cox.loc[condition].copy()
     df_cml_red = df_cml.loc[condition].copy()
     
-    plt.figure()
-    calibration_plot(df_cox_red, df_cml_red)
-    plt.title('Calibration: Indian Men') if hp.gender == 'males' else plt.title('Calibration: Indian Women')
-    plt.savefig(hp.plots_dir + 'calibration_' + hp.gender + '_eth_indian.png')
-    plt.close()
+    ax_plt = ax_cal[1][0]
+    calibration_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Calibration: Indian Men') if hp.gender == 'males' else ax_plt.title.set_text('Calibration: Indian Women')
 
-    plt.figure()
-    discrimination_plot(df_cox_red, df_cml_red)
-    plt.title('Discrimination: Indian Men') if hp.gender == 'males' else plt.title('Discrimination: Indian Women')
-    plt.savefig(hp.plots_dir + 'discrimination_' + hp.gender + '_eth_indian.png')
-    plt.close()
+    ax_plt = ax_dis[1][0]
+    discrimination_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Discrimination: Indian Men') if hp.gender == 'males' else ax_plt.title.set_text('Discrimination: Indian Women')
 
     #Other
     condition = df_cox['en_prtsd_eth_9'].astype(bool)
@@ -251,17 +240,13 @@ def main():
     df_cox_red = df_cox.loc[condition].copy()
     df_cml_red = df_cml.loc[condition].copy()
     
-    plt.figure()
-    calibration_plot(df_cox_red, df_cml_red)
-    plt.title('Calibration: Men of Other Ethnicity') if hp.gender == 'males' else plt.title('Calibration: Women of Other Ethnicity')
-    plt.savefig(hp.plots_dir + 'calibration_' + hp.gender + '_eth_other.png')
-    plt.close()
+    ax_plt = ax_cal[1][1]
+    calibration_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Calibration: Men of Other Ethnicity') if hp.gender == 'males' else ax_plt.title.set_text('Calibration: Women of Other Ethnicity')
 
-    plt.figure()
-    discrimination_plot(df_cox_red, df_cml_red)
-    plt.title('Discrimination: Men of Other Ethnicity') if hp.gender == 'males' else plt.title('Discrimination: Women of Other Ethnicity')
-    plt.savefig(hp.plots_dir + 'discrimination_' + hp.gender + '_eth_other.png')
-    plt.close()
+    ax_plt = ax_dis[1][1]
+    discrimination_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Discrimination: Men of Other Ethnicity') if hp.gender == 'males' else ax_plt.title.set_text('Discrimination: Women of Other Ethnicity')
 
     #NZ European
     condition = (~df_cox['en_prtsd_eth_2'].astype(bool)) & (~df_cox['en_prtsd_eth_3'].astype(bool)) & (~df_cox['en_prtsd_eth_43'].astype(bool)) & (~df_cox['en_prtsd_eth_9'].astype(bool)) 
@@ -269,38 +254,39 @@ def main():
     df_cox_red = df_cox.loc[condition].copy()
     df_cml_red = df_cml.loc[condition].copy()
     
-    plt.figure()
-    calibration_plot(df_cox_red, df_cml_red)
-    plt.title('Calibration: NZ European Men') if hp.gender == 'males' else plt.title('Calibration: NZ European Women')
-    plt.savefig(hp.plots_dir + 'calibration_' + hp.gender + '_eth_european.png')
-    plt.close()
+    ax_plt = ax_cal[2][0]
+    calibration_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Calibration: NZ European Men') if hp.gender == 'males' else ax_plt.title.set_text('Calibration: NZ European Women')
 
-    plt.figure()
-    discrimination_plot(df_cox_red, df_cml_red)
-    plt.title('Discrimination: NZ European Men') if hp.gender == 'males' else plt.title('Discrimination: NZ European Women')
-    plt.savefig(hp.plots_dir + 'discrimination_' + hp.gender + '_eth_european.png')
+    ax_plt = ax_dis[2][0]
+    discrimination_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Discrimination: NZ European Men') if hp.gender == 'males' else ax_plt.title.set_text('Discrimination: NZ European Women')
+
+    plt.tight_layout()
+    plt.subplots_adjust(wspace = 0.3)
+    fig_cal.savefig(hp.plots_dir + hp.gender + '_ethnicity_calibration.png')
+    fig_dis.savefig(hp.plots_dir + hp.gender + '_ethnicity_discrimination.png')
     plt.close()
 
     ################################################################################################
 
     print('Plot by deprivation...')
+    fig_cal, ax_cal = plt.subplots(nrows=3, ncols=2, figsize=(16,18))
+    fig_dis, ax_dis = plt.subplots(nrows=3, ncols=2, figsize=(16,18))
+    
     #1
     condition = (df_cox['en_nzdep_q'].round().astype(int) == 1)
     print('Num people: ', sum(condition))
     df_cox_red = df_cox.loc[condition].copy()
     df_cml_red = df_cml.loc[condition].copy()
     
-    plt.figure()
-    calibration_plot(df_cox_red, df_cml_red)
-    plt.title('Calibration: Men Deprivation Q1') if hp.gender == 'males' else plt.title('Calibration: Women Deprivation Q1')
-    plt.savefig(hp.plots_dir + 'calibration_' + hp.gender + '_deprivation_q1.png')
-    plt.close()
+    ax_plt = ax_cal[0][0]
+    calibration_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Calibration: Men Deprivation Q1') if hp.gender == 'males' else ax_plt.title.set_text('Calibration: Women Deprivation Q1')
 
-    plt.figure()
-    discrimination_plot(df_cox_red, df_cml_red)
-    plt.title('Discrimination: Men Deprivation Q1') if hp.gender == 'males' else plt.title('Discrimination: Women Deprivation Q1')
-    plt.savefig(hp.plots_dir + 'discrimination_' + hp.gender + '_deprivation_q1.png')   
-    plt.close()
+    ax_plt = ax_dis[0][0]
+    discrimination_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Discrimination: Men Deprivation Q1') if hp.gender == 'males' else ax_plt.title.set_text('Discrimination: Women Deprivation Q1')
 
     #2
     condition = (df_cox['en_nzdep_q'].round().astype(int) == 2)
@@ -308,17 +294,13 @@ def main():
     df_cox_red = df_cox.loc[condition].copy()
     df_cml_red = df_cml.loc[condition].copy()
     
-    plt.figure()
-    calibration_plot(df_cox_red, df_cml_red)
-    plt.title('Calibration: Men Deprivation Q2') if hp.gender == 'males' else plt.title('Calibration: Women Deprivation Q2')
-    plt.savefig(hp.plots_dir + 'calibration_' + hp.gender + '_deprivation_q2.png')
-    plt.close()
+    ax_plt = ax_cal[0][1]
+    calibration_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Calibration: Men Deprivation Q2') if hp.gender == 'males' else ax_plt.title.set_text('Calibration: Women Deprivation Q2')
 
-    plt.figure()
-    discrimination_plot(df_cox_red, df_cml_red)
-    plt.title('Discrimination: Men Deprivation Q2') if hp.gender == 'males' else plt.title('Discrimination: Women Deprivation Q2')
-    plt.savefig(hp.plots_dir + 'discrimination_' + hp.gender + '_deprivation_q2.png')   
-    plt.close()
+    ax_plt = ax_dis[0][1]
+    discrimination_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Discrimination: Men Deprivation Q2') if hp.gender == 'males' else ax_plt.title.set_text('Discrimination: Women Deprivation Q2')
     
     #3
     condition = (df_cox['en_nzdep_q'].round().astype(int) == 3)
@@ -326,17 +308,13 @@ def main():
     df_cox_red = df_cox.loc[condition].copy()
     df_cml_red = df_cml.loc[condition].copy()
     
-    plt.figure()
-    calibration_plot(df_cox_red, df_cml_red)
-    plt.title('Calibration: Men Deprivation Q3') if hp.gender == 'males' else plt.title('Calibration: Women Deprivation Q3')
-    plt.savefig(hp.plots_dir + 'calibration_' + hp.gender + '_deprivation_q3.png')
-    plt.close()
+    ax_plt = ax_cal[1][0]
+    calibration_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Calibration: Men Deprivation Q3') if hp.gender == 'males' else ax_plt.title.set_text('Calibration: Women Deprivation Q3')
 
-    plt.figure()
-    discrimination_plot(df_cox_red, df_cml_red)
-    plt.title('Discrimination: Men Deprivation Q3') if hp.gender == 'males' else plt.title('Discrimination: Women Deprivation Q3')
-    plt.savefig(hp.plots_dir + 'discrimination_' + hp.gender + '_deprivation_q3.png')   
-    plt.close()
+    ax_plt = ax_dis[1][0]
+    discrimination_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Discrimination: Men Deprivation Q3') if hp.gender == 'males' else ax_plt.title.set_text('Discrimination: Women Deprivation Q3')
     
     #4
     condition = (df_cox['en_nzdep_q'].round().astype(int) == 4)
@@ -344,17 +322,13 @@ def main():
     df_cox_red = df_cox.loc[condition].copy()
     df_cml_red = df_cml.loc[condition].copy()
     
-    plt.figure()
-    calibration_plot(df_cox_red, df_cml_red)
-    plt.title('Calibration: Men Deprivation Q4') if hp.gender == 'males' else plt.title('Calibration: Women Deprivation Q4')
-    plt.savefig(hp.plots_dir + 'calibration_' + hp.gender + '_deprivation_q4.png')
-    plt.close()
+    ax_plt = ax_cal[1][1]
+    calibration_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Calibration: Men Deprivation Q4') if hp.gender == 'males' else ax_plt.title.set_text('Calibration: Women Deprivation Q4')
 
-    plt.figure()
-    discrimination_plot(df_cox_red, df_cml_red)
-    plt.title('Discrimination: Men Deprivation Q4') if hp.gender == 'males' else plt.title('Discrimination: Women Deprivation Q4')
-    plt.savefig(hp.plots_dir + 'discrimination_' + hp.gender + '_deprivation_q4.png')   
-    plt.close()
+    ax_plt = ax_dis[1][1]
+    discrimination_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Discrimination: Men Deprivation Q4') if hp.gender == 'males' else ax_plt.title.set_text('Discrimination: Women Deprivation Q4')
     
     #5
     condition = (df_cox['en_nzdep_q'].round().astype(int) == 5)
@@ -362,38 +336,39 @@ def main():
     df_cox_red = df_cox.loc[condition].copy()
     df_cml_red = df_cml.loc[condition].copy()
     
-    plt.figure()
-    calibration_plot(df_cox_red, df_cml_red)
-    plt.title('Calibration: Men Deprivation Q5') if hp.gender == 'males' else plt.title('Calibration: Women Deprivation Q5')
-    plt.savefig(hp.plots_dir + 'calibration_' + hp.gender + '_deprivation_q5.png')
-    plt.close()
+    ax_plt = ax_cal[2][0]
+    calibration_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Calibration: Men Deprivation Q5') if hp.gender == 'males' else ax_plt.title.set_text('Calibration: Women Deprivation Q5')
 
-    plt.figure()
-    discrimination_plot(df_cox_red, df_cml_red)
-    plt.title('Discrimination: Men Deprivation Q5') if hp.gender == 'males' else plt.title('Discrimination: Women Deprivation Q5')
-    plt.savefig(hp.plots_dir + 'discrimination_' + hp.gender + '_deprivation_q5.png')   
+    ax_plt = ax_dis[2][0]
+    discrimination_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Discrimination: Men Deprivation Q5') if hp.gender == 'males' else ax_plt.title.set_text('Discrimination: Women Deprivation Q5')
+
+    plt.tight_layout()
+    plt.subplots_adjust(wspace = 0.3)
+    fig_cal.savefig(hp.plots_dir + hp.gender + '_ethnicity_calibration.png')
+    fig_dis.savefig(hp.plots_dir + hp.gender + '_ethnicity_discrimination.png')
     plt.close()
 
     ################################################################################################
 
     print('Plot by baseline medication...')
+    fig_cal, ax_cal = plt.subplots(nrows=3, ncols=2, figsize=(16,18))
+    fig_dis, ax_dis = plt.subplots(nrows=3, ncols=2, figsize=(16,18))    
+    
     #BPL
     condition = df_cox['ph_bp_lowering_prior_6mths'].astype(bool)
     print('Num people: ', sum(condition))
     df_cox_red = df_cox.loc[condition].copy()
     df_cml_red = df_cml.loc[condition].copy()
     
-    plt.figure()
-    calibration_plot(df_cox_red, df_cml_red)
-    plt.title('Calibration: Men with Baseline BPL Medications') if hp.gender == 'males' else plt.title('Calibration: Women with Baseline BPL Medications')
-    plt.savefig(hp.plots_dir + 'calibration_' + hp.gender + '_med_bpl.png')
-    plt.close()
+    ax_plt = ax_cal[0][0]
+    calibration_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Calibration: Men with Baseline BPL Medications') if hp.gender == 'males' else ax_plt.title.set_text('Calibration: Women with Baseline BPL Medications')
 
-    plt.figure()
-    discrimination_plot(df_cox_red, df_cml_red)
-    plt.title('Discrimination: Men with Baseline BPL Medications') if hp.gender == 'males' else plt.title('Discrimination: Women with Baseline BPL Medications')
-    plt.savefig(hp.plots_dir + 'discrimination_' + hp.gender + '_med_bpl.png')    
-    plt.close()
+    ax_plt = ax_dis[0][0]
+    discrimination_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Discrimination: Men with Baseline BPL Medications') if hp.gender == 'males' else ax_plt.title.set_text('Discrimination: Women with Baseline BPL Medications')
 
     #No BPL
     condition = ~df_cox['ph_bp_lowering_prior_6mths'].astype(bool)
@@ -401,17 +376,13 @@ def main():
     df_cox_red = df_cox.loc[condition].copy()
     df_cml_red = df_cml.loc[condition].copy()
     
-    plt.figure()
-    calibration_plot(df_cox_red, df_cml_red)
-    plt.title('Calibration: Men without Baseline BPL Medications') if hp.gender == 'males' else plt.title('Calibration: Women without Baseline BPL Medications')
-    plt.savefig(hp.plots_dir + 'calibration_' + hp.gender + '_med_no_bpl.png')
-    plt.close()
+    ax_plt = ax_cal[0][1]
+    calibration_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Calibration: Men without Baseline BPL Medications') if hp.gender == 'males' else ax_plt.title.set_text('Calibration: Women without Baseline BPL Medications')
 
-    plt.figure()
-    discrimination_plot(df_cox_red, df_cml_red)
-    plt.title('Discrimination: Men without Baseline BPL Medications') if hp.gender == 'males' else plt.title('Discrimination: Women without Baseline BPL Medications')
-    plt.savefig(hp.plots_dir + 'discrimination_' + hp.gender + '_med_no_bpl.png')
-    plt.close()
+    ax_plt = ax_dis[0][1]
+    discrimination_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Discrimination: Men without Baseline BPL Medications') if hp.gender == 'males' else ax_plt.title.set_text('Discrimination: Women without Baseline BPL Medications')
 
     #LL
     condition = df_cox['ph_lipid_lowering_prior_6mths'].astype(bool)
@@ -419,17 +390,13 @@ def main():
     df_cox_red = df_cox.loc[condition].copy()
     df_cml_red = df_cml.loc[condition].copy()
     
-    plt.figure()
-    calibration_plot(df_cox_red, df_cml_red)
-    plt.title('Calibration: Men with Baseline LL Medications') if hp.gender == 'males' else plt.title('Calibration: Women with Baseline LL Medications')
-    plt.savefig(hp.plots_dir + 'calibration_' + hp.gender + '_med_ll.png')
-    plt.close()
+    ax_plt = ax_cal[1][0]
+    calibration_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Calibration: Men with Baseline LL Medications') if hp.gender == 'males' else ax_plt.title.set_text('Calibration: Women with Baseline LL Medications')
 
-    plt.figure()
-    discrimination_plot(df_cox_red, df_cml_red)
-    plt.title('Discrimination: Men with Baseline LL Medications') if hp.gender == 'males' else plt.title('Discrimination: Women with Baseline LL Medications')
-    plt.savefig(hp.plots_dir + 'discrimination_' + hp.gender + '_med_ll.png')    
-    plt.close()
+    ax_plt = ax_dis[1][0]
+    discrimination_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Discrimination: Men with Baseline LL Medications') if hp.gender == 'males' else ax_plt.title.set_text('Discrimination: Women with Baseline LL Medications')
 
     #No LL
     condition = ~df_cox['ph_lipid_lowering_prior_6mths'].astype(bool)
@@ -437,17 +404,13 @@ def main():
     df_cox_red = df_cox.loc[condition].copy()
     df_cml_red = df_cml.loc[condition].copy()
     
-    plt.figure()
-    calibration_plot(df_cox_red, df_cml_red)
-    plt.title('Calibration: Men without Baseline LL Medications') if hp.gender == 'males' else plt.title('Calibration: Women without Baseline LL Medications')
-    plt.savefig(hp.plots_dir + 'calibration_' + hp.gender + '_med_no_ll.png')
-    plt.close()
+    ax_plt = ax_cal[1][1]
+    calibration_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Calibration: Men without Baseline LL Medications') if hp.gender == 'males' else ax_plt.title.set_text('Calibration: Women without Baseline LL Medications')
 
-    plt.figure()
-    discrimination_plot(df_cox_red, df_cml_red)
-    plt.title('Discrimination: Men without Baseline LL Medications') if hp.gender == 'males' else plt.title('Discrimination: Women without Baseline LL Medications')
-    plt.savefig(hp.plots_dir + 'discrimination_' + hp.gender + '_med_no_ll.png')
-    plt.close()
+    ax_plt = ax_dis[1][1]
+    discrimination_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Discrimination: Men without Baseline LL Medications') if hp.gender == 'males' else ax_plt.title.set_text('Discrimination: Women without Baseline LL Medications')
 
     #APL/AC
     condition = df_cox['ph_antiplat_anticoag_prior_6mths'].astype(bool)
@@ -455,17 +418,13 @@ def main():
     df_cox_red = df_cox.loc[condition].copy()
     df_cml_red = df_cml.loc[condition].copy()
     
-    plt.figure()
-    calibration_plot(df_cox_red, df_cml_red)
-    plt.title('Calibration: Men with Baseline APL/AC Medications') if hp.gender == 'males' else plt.title('Calibration: Women with Baseline APL/AC Medications')
-    plt.savefig(hp.plots_dir + 'calibration_' + hp.gender + '_med_apl_ac.png')
-    plt.close()
+    ax_plt = ax_cal[2][0]
+    calibration_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Calibration: Men with Baseline APL/AC Medications') if hp.gender == 'males' else ax_plt.title.set_text('Calibration: Women with Baseline APL/AC Medications')
 
-    plt.figure()
-    discrimination_plot(df_cox_red, df_cml_red)
-    plt.title('Discrimination: Men with Baseline APL/AC Medications') if hp.gender == 'males' else plt.title('Discrimination: Women with Baseline APL/AC Medications')
-    plt.savefig(hp.plots_dir + 'discrimination_' + hp.gender + '_med_apl_ac.png')    
-    plt.close()
+    ax_plt = ax_dis[2][0]
+    discrimination_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Discrimination: Men with Baseline APL/AC Medications') if hp.gender == 'males' else ax_plt.title.set_text('Discrimination: Women with Baseline APL/AC Medications')
 
     #No APL/AC
     condition = ~df_cox['ph_antiplat_anticoag_prior_6mths'].astype(bool)
@@ -473,18 +432,20 @@ def main():
     df_cox_red = df_cox.loc[condition].copy()
     df_cml_red = df_cml.loc[condition].copy()
     
-    plt.figure()
-    calibration_plot(df_cox_red, df_cml_red)
-    plt.title('Calibration: Men without Baseline APL/AC Medications') if hp.gender == 'males' else plt.title('Calibration: Women without Baseline APL/AC Medications')
-    plt.savefig(hp.plots_dir + 'calibration_' + hp.gender + '_med_no_apl_ac.png')
+    ax_plt = ax_cal[2][1]
+    calibration_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Calibration: Men without Baseline APL/AC Medications') if hp.gender == 'males' else ax_plt.title.set_text('Calibration: Women without Baseline APL/AC Medications')
+
+    ax_plt = ax_dis[2][1]
+    discrimination_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Discrimination: Men without Baseline APL/AC Medications') if hp.gender == 'males' else ax_plt.title.set_text('Discrimination: Women without Baseline APL/AC Medications')
+    
+    plt.tight_layout()
+    plt.subplots_adjust(wspace = 0.3)
+    fig_cal.savefig(hp.plots_dir + hp.gender + '_medication_calibration.png')
+    fig_dis.savefig(hp.plots_dir + hp.gender + '_medication_discrimination.png')
     plt.close()
 
-    plt.figure()
-    discrimination_plot(df_cox_red, df_cml_red)
-    plt.title('Discrimination: Men without Baseline APL/AC Medications') if hp.gender == 'males' else plt.title('Discrimination: Women without Baseline APL/AC Medications')
-    plt.savefig(hp.plots_dir + 'discrimination_' + hp.gender + '_med_no_apl_ac.png')
-    plt.close()
-    
     
 if __name__ == '__main__':
     main()
