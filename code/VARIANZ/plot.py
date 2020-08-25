@@ -10,8 +10,12 @@ sys.path.append('../lib/')
 import numpy as np
 import pandas as pd
 import feather
+
+import matplotlib as mpl
 import matplotlib.pyplot as plt
-plt.rcParams.update({'font.size': 14})
+mpl.rc('font',**{'family':'sans-serif', 'sans-serif':['DejaVu Sans'], 'size':18})
+plt.rcParams['axes.linewidth'] = 1
+plt.rcParams['axes.linewidth'] = 1
 
 from hyperparameters import Hyperparameters
 from utils import *
@@ -46,7 +50,7 @@ def calibration_plot(df_cox, df_cml, ax=None, **plt_kwargs):
     lim = max([df_cox['EVENT_PERC'].max(), df_cox['RISK_PERC'].max(), df_cml['EVENT_PERC'].max(), df_cml['RISK_PERC'].max()])+0.5
     ax.set_xlim(0, lim)
     ax.set_ylim(0, lim)
-    ax.plot([0, lim], [0, lim], color = 'black', linewidth = 0.5)
+    ax.plot([0, lim], [0, lim], color = 'black', linewidth = 1)
     
     ax.set_xlabel('Observed events [%]')
     ax.set_ylabel('Mean predicted 5 year risk [%]')
@@ -115,38 +119,39 @@ def main():
     ################################################################################################
 
     print('Plot all...')
-    plt.figure()
-    calibration_plot(df_cox, df_cml)
-    plt.title('Calibration: Men') if hp.gender == 'males' else plt.title('Calibration: Women')
-    plt.savefig(hp.plots_dir + 'calibration_' + hp.gender + '_all.png')
-    plt.close()
+    fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(16,6))
 
-    plt.figure()
-    discrimination_plot(df_cox, df_cml)
-    plt.title('Discrimination: Men') if hp.gender == 'males' else plt.title('Discrimination: Women')
-    plt.savefig(hp.plots_dir + 'discrimination_' + hp.gender + '_all.png')
+    ax_plt = ax[0]
+    calibration_plot(df_cox, df_cml, ax_plt)
+    ax_plt.set_text.title('Calibration: Men') if hp.gender == 'males' else ax_plt.title.set_text('Calibration: Women')
+
+    ax_plt = ax[1]
+    discrimination_plot(df_cox, df_cml, ax_plt)
+    ax_plt.title.set_text('Discrimination: Men') if hp.gender == 'males' else ax_plt.title.set_text('Discrimination: Women')
+    
+    plt.tight_layout()
+    plt.subplots_adjust(wspace = 0.3)
+    fig.savefig(hp.plots_dir + hp.gender + '_all.png')
     plt.close()
     
     ################################################################################################
     
     print('Plot by age...')
+    fig, ax = plt.subplots(nrows=3, ncols=2, figsize=(16,18))
+    
     #30-44
     condition = (df_cox['nhi_age'] >= 30) & (df_cox['nhi_age'] < 45)
     print('Num people: ', sum(condition))
     df_cox_red = df_cox.loc[condition].copy()
     df_cml_red = df_cml.loc[condition].copy()
     
-    plt.figure()
-    calibration_plot(df_cox_red, df_cml_red)
-    plt.title('Calibration: Men 30-44 years') if hp.gender == 'males' else plt.title('Calibration: Women 30-44 years')
-    plt.savefig(hp.plots_dir + 'calibration_' + hp.gender + '_age_30_44.png')
-    plt.close()
+    ax_plt = ax[0][0]
+    calibration_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Calibration: Men 30-44 years') if hp.gender == 'males' else ax_plt.title.set_text('Calibration: Women 30-44 years')
 
-    plt.figure()
-    discrimination_plot(df_cox_red, df_cml_red)
-    plt.title('Discrimination: Men 30-44 years') if hp.gender == 'males' else plt.title('Discrimination: Women 30-44 years')
-    plt.savefig(hp.plots_dir + 'discrimination_' + hp.gender + '_age_30_44.png')    
-    plt.close()
+    ax_plt = ax[0][1]
+    discrimination_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Discrimination: Men 30-44 years') if hp.gender == 'males' else ax_plt.title.set_text('Discrimination: Women 30-44 years')
     
     #45-59
     condition = (df_cox['nhi_age'] >= 45) & (df_cox['nhi_age'] < 60)
@@ -154,17 +159,13 @@ def main():
     df_cox_red = df_cox.loc[condition].copy()
     df_cml_red = df_cml.loc[condition].copy()
     
-    plt.figure()
-    calibration_plot(df_cox_red, df_cml_red)
-    plt.title('Calibration: Men 45-59 years') if hp.gender == 'males' else plt.title('Calibration: Women 45-59 years')
-    plt.savefig(hp.plots_dir + 'calibration_' + hp.gender + '_age_45_59.png')
-    plt.close()
+    ax_plt = ax[1][0]
+    calibration_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Calibration: Men 45-59 years') if hp.gender == 'males' else ax_plt.title.set_text('Calibration: Women 45-59 years')
 
-    plt.figure()
-    discrimination_plot(df_cox_red, df_cml_red)
-    plt.title('Discrimination: Men 45-59 years') if hp.gender == 'males' else plt.title('Discrimination: Women 45-59 years')
-    plt.savefig(hp.plots_dir + 'discrimination_' + hp.gender + '_age_45_59.png')
-    plt.close()
+    ax_plt = ax[1][1]
+    discrimination_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Discrimination: Men 45-59 years') if hp.gender == 'males' else ax_plt.title.set_text('Discrimination: Women 45-59 years')
     
     #60-74
     condition = (df_cox['nhi_age'] >= 60) & (df_cox['nhi_age'] < 75)
@@ -172,21 +173,24 @@ def main():
     df_cox_red = df_cox.loc[condition].copy()
     df_cml_red = df_cml.loc[condition].copy()
     
-    plt.figure()
-    calibration_plot(df_cox_red, df_cml_red)
-    plt.title('Calibration: Men 60-74 years') if hp.gender == 'males' else plt.title('Calibration: Women 60-74 years')
-    plt.savefig(hp.plots_dir + 'calibration_' + hp.gender + '_age_60_74.png')
+    ax_plt = ax[2][0]
+    calibration_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Calibration: Men 60-74 years') if hp.gender == 'males' else ax_plt.title.set_text('Calibration: Women 60-74 years')
+
+    ax_plt = ax[2][1]
+    discrimination_plot(df_cox_red, df_cml_red, ax_plt)
+    ax_plt.title.set_text('Discrimination: Men 60-74 years') if hp.gender == 'males' else ax_plt.title.set_text('Discrimination: Women 60-74 years')
+    
+    plt.tight_layout()
+    plt.subplots_adjust(wspace = 0.3)
+    fig.savefig(hp.plots_dir + hp.gender + '_age.png')
     plt.close()
 
-    plt.figure()
-    discrimination_plot(df_cox_red, df_cml_red)
-    plt.title('Discrimination: Men 60-74 years') if hp.gender == 'males' else plt.title('Discrimination: Women 60-74 years')
-    plt.savefig(hp.plots_dir + 'discrimination_' + hp.gender + '_age_60_74.png')  
-    plt.close()
-    
     ################################################################################################
     
     print('Plot by ethnicity...')
+    fig_cal, ax_cal = plt.subplots(nrows=3, ncols=2, figsize=(16,18))
+    
     #Maori
     condition = df_cox['en_prtsd_eth_2'].astype(bool)
     print('Num people: ', sum(condition))

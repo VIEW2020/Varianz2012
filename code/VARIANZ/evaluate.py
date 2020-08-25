@@ -54,6 +54,13 @@ def main():
     ibs_vec_cml = np.zeros(hp.num_folds)
     auc_vec_cml = np.zeros(hp.num_folds)
     
+    # baseline survival
+    es_cox = EvalSurv(df_cox.copy())
+    es_cml = EvalSurv(df_cml.copy())    
+    print('Base survival Cox: {:.5}'.format(es_cox.get_base_surv(1826)))
+    print('Base survival CML: {:.5}'.format(es_cml.get_base_surv(1826)))
+    return
+    
     # evaluate
     for fold in range(hp.num_folds):
         print('Fold: {}'.format(fold))
