@@ -26,10 +26,10 @@ from pdb import set_trace as bp
 
 def main():
     
-    fig, ax = plt.subplots(nrows=2, ncols=2, figsize=(16,12))
-    fig_cal, ax_cal = plt.subplots(nrows=3, ncols=2, figsize=(16,18))
+    fig, ax = plt.subplots(nrows=2, ncols=2, figsize=(16,14))
+    fig_cal, ax_cal = plt.subplots(nrows=3, ncols=2, figsize=(16,21))
     
-    for i, gender in enumerate([females, males]):
+    for i, gender in enumerate(['females', 'males']):
     
         # Load data
         print('Load data...')
@@ -86,7 +86,7 @@ def main():
         df_cox_red = df_cox.loc[condition].copy()
         df_cml_red = df_cml.loc[condition].copy()
         
-        ax_plt = ax_cal[0][i]
+        ax_plt = ax_cal[1][i]
         calibration_plot(df_cox_red, df_cml_red, ax_plt)
         ax_plt.title.set_text('Calibration: Maori Men') if gender == 'males' else ax_plt.title.set_text('Calibration: Maori Women')
         
@@ -96,18 +96,18 @@ def main():
         df_cox_red = df_cox.loc[condition].copy()
         df_cml_red = df_cml.loc[condition].copy()
         
-        ax_plt = ax_cal[2][0]
+        ax_plt = ax_cal[2][i]
         calibration_plot(df_cox_red, df_cml_red, ax_plt)
         ax_plt.title.set_text('Calibration: Men Deprivation Q5') if gender == 'males' else ax_plt.title.set_text('Calibration: Women Deprivation Q5')
         
         ################################################################################################
  
     fig.tight_layout()
-    fig.subplots_adjust(wspace = 0.3)
+    fig.subplots_adjust(wspace = 0.3, hspace = 0.3)
     fig.savefig(hp.plots_dir + 'all.png')    
     
     fig_cal.tight_layout()
-    fig_cal.subplots_adjust(wspace = 0.3)
+    fig_cal.subplots_adjust(wspace = 0.3, hspace = 0.3)
     fig_cal.savefig(hp.plots_dir + 'examples_calibration.png')
         
     
