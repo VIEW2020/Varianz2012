@@ -15,7 +15,6 @@ from hyperparameters import Hyperparameters
 
 from tqdm import tqdm
 from pandas_ods_reader import read_ods
-from scipy.stats import pearsonr
 
 from pdb import set_trace as bp
   
@@ -31,16 +30,13 @@ def percentile(n):
 def corr(X, Y):
     """Computes the Pearson correlation coefficient and a 95% confidence
     interval based on the data in X and Y."""
-
     r = np.corrcoef(X, Y)[0,1]
     f = 0.5*np.log((1+r)/(1-r))
     se = 1/np.sqrt(len(X)-3)
     ucl = f + 2*se
     lcl = f - 2*se
-
     lcl = (np.exp(2*lcl) - 1) / (np.exp(2*lcl) + 1)
     ucl = (np.exp(2*ucl) - 1) / (np.exp(2*ucl) + 1)
-
     return r, lcl, ucl
  
  
@@ -60,13 +56,13 @@ def main():
         df['RISK_PERC'] = feather.read_dataframe(hp.results_dir + 'df_cml_' + gender + '.feather')['RISK_PERC']
 
         # median risk
-        print('Median risk: {:.3} IQR: [{:.3}, {:.3}]'.format(np.percentile(df['RISK_PERC'].values, 50), np.percentile(df['RISK_PERC'].values, 25), np.percentile(df['RISK_PERC'].values, 75))
+        print('Median risk: {:.3} IQR: [{:.3}, {:.3}]'.format(np.percentile(df['RISK_PERC'].values, 50), np.percentile(df['RISK_PERC'].values, 25), np.percentile(df['RISK_PERC'].values, 75)))
         
         # set SA2s with less than 5 people to NaN
         df.loc[df.groupby('SA22020_V1')['VSIMPLE_INDEX_MASTER'].transform('nunique') < 5, 'RISK_PERC'] = np.nan
         
         # get median risk by SA2
-        df = df.groupby('SA22020_V1').agg({'RISK_PERC': median}).reset_index()
+        df = df.groupby('SA22020_V1')['RISK_PERC'].median().reset_index()
         
         # save
         df.to_csv(hp.results_dir + 'df_sa2_' + gender + '.csv')
@@ -75,12 +71,9 @@ def main():
         else:
             df_males = df
 
-    bp()
-    df = df_females.merge(df_males, on='SA2', how='inner')
-    corr, _ = pearsonr(data1, data2)
-    print('Pearsons correlation: {:.3}'.format(corr))
-    corr, lcl, ucl = corr(data1, data2)
-    print('Pearsons correlation: {:.3}'.format(corr))    
+    df = df_females.merge(df_males, on='SA22020_V1', how='inner').dropna()
+    corr_coeff, lcl, ucl = corr(df['RISK_PERC_x'].values, df['RISK_PERC_y'].values)
+    print('Pearsons correlation: {:.3} [{:.3}, {:.3}]'.format(corr_coeff, lcl, ucl))    
     
 
 if __name__ == '__main__':
