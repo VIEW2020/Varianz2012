@@ -83,7 +83,7 @@ def discrimination_plot(df_cox, df_cml, ax=None, **plt_kwargs):
     ax.legend(['CVD Equations', 'Deep Learning'])
     
     ax.set_xlabel('Deciles of predicted risk')
-    ax.set_ylabel('Proportion of all CVD events')
+    ax.set_ylabel('Proportion of all CVD events [%]')
     
     return(ax)
 
