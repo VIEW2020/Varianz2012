@@ -41,7 +41,7 @@ End of followup was calculated by first capturing time to first CVD event or dea
     <tr>
       <td class="numberingColumn" colspan="1">3</td>
       <td colspan="1">Remove people with dispensing 28 days after death</td>
-      <td colspan="1">-1006</td>
+      <td colspan="1">-1066</td>
     </tr>
     <tr>
       <td class="numberingColumn" colspan="1">4</td>
@@ -75,7 +75,7 @@ End of followup was calculated by first capturing time to first CVD event or dea
     <tr>
       <td class="numberingColumn" colspan="1">9</td>
       <td colspan="1"><span style="font-weight:bold">Total Remaining</span></td>
-      <td colspan="1"><span style="font-weight:bold">2201695</span></td>
+      <td colspan="1"><span style="font-weight:bold">2,201,695</span></td>
     </tr>
   </tbody>
 </table>
