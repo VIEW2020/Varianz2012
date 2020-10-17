@@ -14,6 +14,7 @@ import torch.nn.functional as F
 import torch.nn as nn
 from torch.nn import LSTM, GRU
 from tqdm import tqdm
+from attention_models import Attention
 
 from pdb import set_trace as bp
 
@@ -43,6 +44,8 @@ class NetRNN(nn.Module):
             self.rnn = LSTM(input_size = self.embedding_dim, hidden_size = self.embedding_dim, num_layers = self.num_rnn_layers, batch_first = True, dropout = hp.dropout, bidirectional = True)
         else:
             self.rnn =  GRU(input_size = self.embedding_dim, hidden_size = self.embedding_dim, num_layers = self.num_rnn_layers, batch_first = True, dropout = hp.dropout, bidirectional = True)
+        if self.summarize == 'output_attention':
+            self.attention = Attention(embedding_dim = self.embedding_dim)
         # Fully connected layers ##########################################################################################################
         fc_size = num_input + 2*self.embedding_dim
         layers = []
@@ -73,7 +76,6 @@ class NetRNN(nn.Module):
             output, hidden = self.rnn(packed)
         if self.summarize == 'hidden':
             hidden = hidden.view(self.num_rnn_layers, 2, -1, self.embedding_dim)[-1] # view(num_layers, num_directions, batch, hidden_size)[last_state]
-            #hidden.masked_fill_((seq_length == 0).view(-1, 1), 0)
             summary_0, summary_1 = hidden[0], hidden[1]
         else:
             output, _ = nn.utils.rnn.pad_packed_sequence(output, batch_first=True)
@@ -84,7 +86,9 @@ class NetRNN(nn.Module):
                 output = output.sum(dim=1)
             elif self.summarize == 'output_avg':
                 output = output.sum(dim=1)/(seq_length.clamp(min=1).view(-1, 1, 1))
-            #output.masked_fill_((seq_length == 0).view(-1, 1, 1), 0)
+            elif self.summarize == 'output_attention':
+                bp()
+                output = self.attention(output)
             summary_0, summary_1 = output[:,0,:], output[:,1,:]
         # Fully connected layers ##########################################################################################################    
         x = torch.cat((x, summary_0, summary_1), dim=-1)

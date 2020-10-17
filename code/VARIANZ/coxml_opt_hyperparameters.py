@@ -124,8 +124,9 @@ def main():
     df_index_code = feather.read_dataframe(pp.data_pp_dir + 'df_index_code_' + pp.gender + '.feather')
     
     print('Begin study...')
-    study = optuna.create_study(sampler=optuna.samplers.TPESampler(), pruner=optuna.pruners.SuccessiveHalvingPruner())
-    study.optimize(lambda trial: objective(trial, data, df_index_code), n_trials=100)
+    #study = optuna.create_study(sampler=optuna.samplers.TPESampler(), pruner=optuna.pruners.SuccessiveHalvingPruner())
+    study = optuna.create_study(sampler=optuna.samplers.GridSampler(), pruner=optuna.pruners.NopPruner())
+    study.optimize(lambda trial: objective(trial, data, df_index_code), n_trials=2)
     
     print('Save...')
     save_obj(study, pp.log_dir + 'study_' + pp.gender + '.pkl')
