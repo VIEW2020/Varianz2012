@@ -12,11 +12,18 @@ import torch
 import torch.utils.data as utils
 import torch.nn.functional as F
 import torch.nn as nn
-from torch.nn import LSTM, GRU
+from torch.nn import LSTM, GRU, ConstantPad1d
 from tqdm import tqdm
 from attention_models import Attention
 
 from pdb import set_trace as bp
+
+
+def flip_batch(x, seq_length):
+    assert x.shape[0] == seq_length.shape[0], 'Dimension Mismatch!'
+    for i in range(x.shape[0]):
+        x[i, :seq_length[i]] = x[i, :seq_length[i]].flip(dims=[0])
+    return x
 
 
 class NetRNN(nn.Module):
@@ -40,12 +47,17 @@ class NetRNN(nn.Module):
         # RNN #############################################################################################################################
         if self.add_month == 'concat':
             self.embedding_dim = self.embedding_dim + 1
+            self.pad_fw = ConstantPad1d((1, 0), 0.)
+            self.pad_bw = ConstantPad1d((0, 1), 0.)
         if self.rnn_type == 'LSTM':
-            self.rnn = LSTM(input_size = self.embedding_dim, hidden_size = self.embedding_dim, num_layers = self.num_rnn_layers, batch_first = True, dropout = hp.dropout, bidirectional = True)
+            self.rnn_fw = LSTM(input_size = self.embedding_dim, hidden_size = self.embedding_dim, num_layers = self.num_rnn_layers, batch_first = True, dropout = hp.dropout, bidirectional = False)
+            self.rnn_bw = LSTM(input_size = self.embedding_dim, hidden_size = self.embedding_dim, num_layers = self.num_rnn_layers, batch_first = True, dropout = hp.dropout, bidirectional = False)
         else:
-            self.rnn =  GRU(input_size = self.embedding_dim, hidden_size = self.embedding_dim, num_layers = self.num_rnn_layers, batch_first = True, dropout = hp.dropout, bidirectional = True)
+            self.rnn_fw =  GRU(input_size = self.embedding_dim, hidden_size = self.embedding_dim, num_layers = self.num_rnn_layers, batch_first = True, dropout = hp.dropout, bidirectional = False)
+            self.rnn_bw =  GRU(input_size = self.embedding_dim, hidden_size = self.embedding_dim, num_layers = self.num_rnn_layers, batch_first = True, dropout = hp.dropout, bidirectional = False)
         if self.summarize == 'output_attention':
-            self.attention = Attention(embedding_dim = self.embedding_dim)
+            self.attention_fw = Attention(embedding_dim = self.embedding_dim)
+            self.attention_bw = Attention(embedding_dim = self.embedding_dim)
         # Fully connected layers ##########################################################################################################
         fc_size = num_input + 2*self.embedding_dim
         layers = []
@@ -66,10 +78,19 @@ class NetRNN(nn.Module):
             embedded = embedded + self.embed_diagt(diagt.long())        
         if self.add_month == 'embedding':
             embedded = embedded + self.embed_month(month.long())
-        elif self.add_month == 'concat':
-            embedded = torch.cat((embedded, (month/float(self.num_months_hx)).unsqueeze(dim=-1)), dim=-1)            
+        if self.add_month == 'concat':
+            delta = month[:,1:]-month[:,:-1]
+            delta_fw = pad_fw(delta)
+            delta_bw = pad_bw(delta)
+            embedded_fw = torch.cat((embedded, delta_fw.unsqueeze(dim=-1)), dim=-1)
+            embedded_bw = torch.cat((embedded, delta_bw.unsqueeze(dim=-1)), dim=-1)
+            embedded_bw = flip_batch(embedded_bw, seq_length)
+        else:
+            embedded_fw = embedded
+            embedded_bw = flip_batch(embedded, seq_length)
         # RNN #############################################################################################################################
-        packed = nn.utils.rnn.pack_padded_sequence(embedded, seq_length.clamp(min=1), batch_first = True, enforce_sorted = False)
+        packed_fw = nn.utils.rnn.pack_padded_sequence(embedded_fw, seq_length.clamp(min=1), batch_first = True, enforce_sorted = False)
+        packed_bw = nn.utils.rnn.pack_padded_sequence(embedded_bw, seq_length.clamp(min=1), batch_first = True, enforce_sorted = False)
         if self.rnn_type == 'LSTM':
             output, (hidden, _) = self.rnn(packed)
         elif self.rnn_type == 'GRU':
@@ -101,7 +122,7 @@ class NetRNN(nn.Module):
         return x
 
 
-class NetRNN_Minimal(nn.Module):
+class NetRNNFinal(nn.Module):
     def __init__(self, num_input, num_embeddings, hp):
         super(NetRNN_Minimal, self).__init__()
         # Parameters ######################################################################################################################
