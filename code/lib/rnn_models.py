@@ -82,14 +82,19 @@ class NetRNN(nn.Module):
             output = output.view(-1, max(1, seq_length.max()), 2, self.embedding_dim) # view(batch, seq_len, num_directions, hidden_size)
             if self.summarize == 'output_max':
                 output, _ = output.max(dim=1)
+                summary_0, summary_1 = output[:,0,:], output[:,1,:]
             elif self.summarize == 'output_sum':
                 output = output.sum(dim=1)
+                summary_0, summary_1 = output[:,0,:], output[:,1,:]
             elif self.summarize == 'output_avg':
                 output = output.sum(dim=1)/(seq_length.clamp(min=1).view(-1, 1, 1))
+                summary_0, summary_1 = output[:,0,:], output[:,1,:]
             elif self.summarize == 'output_attention':
-                bp()
-                output = self.attention(output)
-            summary_0, summary_1 = output[:,0,:], output[:,1,:]
+                output_0, output_1 = output[:,:,0,:], output[:,:,1,:]
+                mask = (code>0)[:, :max(1, seq_length.max())]
+                summary_0, _ = self.attention(output_0, mask)
+                summary_1, _ = self.attention(output_1, mask)
+            
         # Fully connected layers ##########################################################################################################    
         x = torch.cat((x, summary_0, summary_1), dim=-1)
         x = self.mlp(x)

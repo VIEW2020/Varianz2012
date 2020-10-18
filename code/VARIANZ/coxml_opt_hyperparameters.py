@@ -27,8 +27,8 @@ from pdb import set_trace as bp
 
 
 def objective(trial, data, df_index_code):
-    # hp = Hyperparameters(trial)
-    hp = Hyperparameters()
+    hp = Hyperparameters(trial)
+    #hp = Hyperparameters()
     print(trial.params)
 
     idx_trn = (data['fold'] != 99)
@@ -125,7 +125,7 @@ def main():
     
     print('Begin study...')
     #study = optuna.create_study(sampler=optuna.samplers.TPESampler(), pruner=optuna.pruners.SuccessiveHalvingPruner())
-    study = optuna.create_study(sampler=optuna.samplers.GridSampler(), pruner=optuna.pruners.NopPruner())
+    study = optuna.create_study(sampler=optuna.samplers.GridSampler({'summarize': ['output_max', 'output_attention']}), pruner=optuna.pruners.NopPruner())
     study.optimize(lambda trial: objective(trial, data, df_index_code), n_trials=2)
     
     print('Save...')
