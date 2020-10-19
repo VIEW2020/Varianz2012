@@ -39,7 +39,6 @@ def objective(trial, data, df_index_code):
     month_trn = data['month'][idx_trn]
     diagt_trn = data['diagt'][idx_trn]
 
-
     idx_val = (data['fold'] == 99)
     x_val = data['x'][idx_val]
     time_val = data['time'][idx_val]
@@ -125,8 +124,8 @@ def main():
     
     print('Begin study...')
     #study = optuna.create_study(sampler=optuna.samplers.TPESampler(), pruner=optuna.pruners.SuccessiveHalvingPruner())
-    study = optuna.create_study(sampler=optuna.samplers.GridSampler({'summarize': ['output_max', 'output_attention']}), pruner=optuna.pruners.NopPruner())
-    study.optimize(lambda trial: objective(trial, data, df_index_code), n_trials=2)
+    study = optuna.create_study(sampler=optuna.samplers.GridSampler({'summarize': ['output_attention']}), pruner=optuna.pruners.NopPruner())
+    study.optimize(lambda trial: objective(trial, data, df_index_code), n_trials=1)
     
     print('Save...')
     save_obj(study, pp.log_dir + 'study_' + pp.gender + '.pkl')

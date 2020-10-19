@@ -79,10 +79,10 @@ class NetRNN(nn.Module):
         if self.add_month == 'embedding':
             embedded = embedded + self.embed_month(month.long())
         if self.add_month == 'concat':
-            bp()
-            delta = month[:,1:]-month[:,:-1]
-            delta_fw = pad_fw(delta)
-            delta_bw = pad_bw(delta)
+            month = month/float(self.num_months_hx)
+            delta = torch.clamp(month[:,1:]-month[:,:-1], min=0)
+            delta_fw = self.pad_fw(delta)
+            delta_bw = self.pad_bw(delta)
             embedded_fw = torch.cat((embedded, delta_fw.unsqueeze(dim=-1)), dim=-1)
             embedded_bw = torch.cat((embedded, delta_bw.unsqueeze(dim=-1)), dim=-1)
             embedded_bw = flip_batch(embedded_bw, seq_length)
@@ -99,8 +99,8 @@ class NetRNN(nn.Module):
             output_fw, hidden_fw = self.rnn_fw(packed_fw)
             output_bw, hidden_bw = self.rnn_bw(packed_bw)
         if self.summarize == 'hidden':
-            hidden_fw = hidden_fw.view(self.num_rnn_layers, -1, self.embedding_dim)[-1] # view(num_layers, num_directions=1, batch, hidden_size)[last_state]
-            hidden_bw = hidden_bw.view(self.num_rnn_layers, -1, self.embedding_dim)[-1] # view(num_layers, num_directions=1, batch, hidden_size)[last_state]
+            hidden_fw = hidden_fw[-1] # view(num_layers, num_directions=1, batch, hidden_size)[last_state]
+            hidden_bw = hidden_bw[-1] # view(num_layers, num_directions=1, batch, hidden_size)[last_state]
             summary_0, summary_1 = hidden_fw, hidden_bw
         else:
             output_fw, _ = nn.utils.rnn.pad_packed_sequence(output_fw, batch_first=True)
@@ -121,8 +121,8 @@ class NetRNN(nn.Module):
                 summary_0, summary_1 = output_fw, output_bw
             elif self.summarize == 'output_attention':
                 mask = (code>0)[:, :max(1, seq_length.max())]
-                summary_0, _ = self.attention(output_fw, mask)
-                summary_1, _ = self.attention(output_bw, mask)
+                summary_0, _ = self.attention_fw(output_fw, mask)
+                summary_1, _ = self.attention_bw(output_bw, mask)
             
         # Fully connected layers ##########################################################################################################    
         x = torch.cat((x, summary_0, summary_1), dim=-1)
@@ -164,10 +164,11 @@ class NetRNNFinal(nn.Module):
             seq_length = (code>0).sum(dim=-1)
         # Embedding layers ################################################################################################################
         embedded = self.embed_codes(code.long())
-        embedded = embedded + self.embed_diagt(diagt.long())        
-        delta = month[:,1:]-month[:,:-1]
-        delta_fw = pad_fw(delta)
-        delta_bw = pad_bw(delta)
+        embedded = embedded + self.embed_diagt(diagt.long())    
+        month = month/float(self.num_months_hx)
+        delta = torch.clamp(month[:,1:]-month[:,:-1], min=0)
+        delta_fw = self.pad_fw(delta)
+        delta_bw = self.pad_bw(delta)
         embedded_fw = torch.cat((embedded, delta_fw.unsqueeze(dim=-1)), dim=-1)
         embedded_bw = torch.cat((embedded, delta_bw.unsqueeze(dim=-1)), dim=-1)
         embedded_bw = flip_batch(embedded_bw, seq_length)
@@ -181,8 +182,8 @@ class NetRNNFinal(nn.Module):
         output_fw = output_fw.view(-1, max(1, seq_length.max()), self.embedding_dim) # view(batch, seq_len, num_directions=1, hidden_size)
         output_bw = output_bw.view(-1, max(1, seq_length.max()), self.embedding_dim) # view(batch, seq_len, num_directions=1, hidden_size)
         mask = (code>0)[:, :max(1, seq_length.max())]
-        summary_0, _ = self.attention(output_fw, mask)
-        summary_1, _ = self.attention(output_bw, mask)            
+        summary_0, _ = self.attention_fw(output_fw, mask)
+        summary_1, _ = self.attention_bw(output_bw, mask)            
         # Fully connected layers ##########################################################################################################    
         x = torch.cat((x, summary_0, summary_1), dim=-1)
         x = self.mlp(x)
