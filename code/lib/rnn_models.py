@@ -28,7 +28,7 @@ def flip_batch(x, seq_length):
 
 class NetRNN(nn.Module):
     def __init__(self, num_input, num_embeddings, hp):
-        super(NetRNN, self).__init__()
+        super().__init__()
         # Parameters ######################################################################################################################
         self.nonprop_hazards = hp.nonprop_hazards
         self.add_diagt = hp.add_diagt
@@ -79,6 +79,7 @@ class NetRNN(nn.Module):
         if self.add_month == 'embedding':
             embedded = embedded + self.embed_month(month.long())
         if self.add_month == 'concat':
+            bp()
             delta = month[:,1:]-month[:,:-1]
             delta_fw = pad_fw(delta)
             delta_bw = pad_bw(delta)
@@ -92,29 +93,36 @@ class NetRNN(nn.Module):
         packed_fw = nn.utils.rnn.pack_padded_sequence(embedded_fw, seq_length.clamp(min=1), batch_first = True, enforce_sorted = False)
         packed_bw = nn.utils.rnn.pack_padded_sequence(embedded_bw, seq_length.clamp(min=1), batch_first = True, enforce_sorted = False)
         if self.rnn_type == 'LSTM':
-            output, (hidden, _) = self.rnn(packed)
+            output_fw, (hidden_fw, _) = self.rnn_fw(packed_fw)
+            output_bw, (hidden_bw, _) = self.rnn_bw(packed_bw)
         elif self.rnn_type == 'GRU':
-            output, hidden = self.rnn(packed)
+            output_fw, hidden_fw = self.rnn_fw(packed_fw)
+            output_bw, hidden_bw = self.rnn_bw(packed_bw)
         if self.summarize == 'hidden':
-            hidden = hidden.view(self.num_rnn_layers, 2, -1, self.embedding_dim)[-1] # view(num_layers, num_directions, batch, hidden_size)[last_state]
-            summary_0, summary_1 = hidden[0], hidden[1]
+            hidden_fw = hidden_fw.view(self.num_rnn_layers, -1, self.embedding_dim)[-1] # view(num_layers, num_directions=1, batch, hidden_size)[last_state]
+            hidden_bw = hidden_bw.view(self.num_rnn_layers, -1, self.embedding_dim)[-1] # view(num_layers, num_directions=1, batch, hidden_size)[last_state]
+            summary_0, summary_1 = hidden_fw, hidden_bw
         else:
-            output, _ = nn.utils.rnn.pad_packed_sequence(output, batch_first=True)
-            output = output.view(-1, max(1, seq_length.max()), 2, self.embedding_dim) # view(batch, seq_len, num_directions, hidden_size)
+            output_fw, _ = nn.utils.rnn.pad_packed_sequence(output_fw, batch_first=True)
+            output_bw, _ = nn.utils.rnn.pad_packed_sequence(output_bw, batch_first=True)
+            output_fw = output_fw.view(-1, max(1, seq_length.max()), self.embedding_dim) # view(batch, seq_len, num_directions=1, hidden_size)
+            output_bw = output_bw.view(-1, max(1, seq_length.max()), self.embedding_dim) # view(batch, seq_len, num_directions=1, hidden_size)
             if self.summarize == 'output_max':
-                output, _ = output.max(dim=1)
-                summary_0, summary_1 = output[:,0,:], output[:,1,:]
+                output_fw, _ = output_fw.max(dim=1)
+                output_bw, _ = output_bw.max(dim=1)
+                summary_0, summary_1 = output_fw, output_bw
             elif self.summarize == 'output_sum':
-                output = output.sum(dim=1)
-                summary_0, summary_1 = output[:,0,:], output[:,1,:]
+                output_fw = output_fw.sum(dim=1)
+                output_bw = output_bw.sum(dim=1)
+                summary_0, summary_1 = output_fw, output_bw
             elif self.summarize == 'output_avg':
-                output = output.sum(dim=1)/(seq_length.clamp(min=1).view(-1, 1, 1))
-                summary_0, summary_1 = output[:,0,:], output[:,1,:]
+                output_fw = output_fw.sum(dim=1)/(seq_length.clamp(min=1).view(-1, 1))
+                output_bw = output_bw.sum(dim=1)/(seq_length.clamp(min=1).view(-1, 1))
+                summary_0, summary_1 = output_fw, output_bw
             elif self.summarize == 'output_attention':
-                output_0, output_1 = output[:,:,0,:], output[:,:,1,:]
                 mask = (code>0)[:, :max(1, seq_length.max())]
-                summary_0, _ = self.attention(output_0, mask)
-                summary_1, _ = self.attention(output_1, mask)
+                summary_0, _ = self.attention(output_fw, mask)
+                summary_1, _ = self.attention(output_bw, mask)
             
         # Fully connected layers ##########################################################################################################    
         x = torch.cat((x, summary_0, summary_1), dim=-1)
@@ -124,16 +132,25 @@ class NetRNN(nn.Module):
 
 class NetRNNFinal(nn.Module):
     def __init__(self, num_input, num_embeddings, hp):
-        super(NetRNN_Minimal, self).__init__()
         # Parameters ######################################################################################################################
+        self.nonprop_hazards = hp.nonprop_hazards
+        self.add_diagt = hp.add_diagt
+        self.add_month = hp.add_month
         self.num_months_hx = hp.num_months_hx-1
+        self.rnn_type = hp.rnn_type
+        self.num_rnn_layers = hp.num_rnn_layers
         self.embedding_dim = hp.embedding_dim
+        self.summarize = hp.summarize
         # Embedding layers ################################################################################################################
         self.embed_codes = nn.Embedding(num_embeddings = num_embeddings, embedding_dim = hp.embedding_dim, padding_idx = 0)
-        self.embed_diagt = nn.Embedding(num_embeddings = 5, embedding_dim = hp.embedding_dim, padding_idx = 0)
         # RNN #############################################################################################################################
         self.embedding_dim = self.embedding_dim + 1
-        self.rnn =  GRU(input_size = self.embedding_dim, hidden_size = self.embedding_dim, num_layers = hp.num_rnn_layers, batch_first = True, dropout = hp.dropout, bidirectional = True)
+        self.pad_fw = ConstantPad1d((1, 0), 0.)
+        self.pad_bw = ConstantPad1d((0, 1), 0.)
+        self.rnn_fw =  GRU(input_size = self.embedding_dim, hidden_size = self.embedding_dim, num_layers = self.num_rnn_layers, batch_first = True, dropout = hp.dropout, bidirectional = False)
+        self.rnn_bw =  GRU(input_size = self.embedding_dim, hidden_size = self.embedding_dim, num_layers = self.num_rnn_layers, batch_first = True, dropout = hp.dropout, bidirectional = False)
+        self.attention_fw = Attention(embedding_dim = self.embedding_dim)
+        self.attention_bw = Attention(embedding_dim = self.embedding_dim)
         # Fully connected layers ##########################################################################################################
         fc_size = num_input + 2*self.embedding_dim
         layers = []
@@ -142,26 +159,32 @@ class NetRNNFinal(nn.Module):
         layers.append(nn.Linear(fc_size, 1))
         self.mlp = nn.Sequential(*layers)        
 
-    def forward(self, x, code, month, diagt, seq_length=None):
+    def forward(self, x, code, month, diagt, time=None, seq_length=None):
         if seq_length is None:
             seq_length = (code>0).sum(dim=-1)
         # Embedding layers ################################################################################################################
-        embedded = self.embed_codes(code)
-        embedded = embedded + self.embed_diagt(diagt)
-        embedded = torch.cat((embedded, (month/float(self.num_months_hx)).unsqueeze(dim=-1)), dim=-1)            
+        embedded = self.embed_codes(code.long())
+        embedded = embedded + self.embed_diagt(diagt.long())        
+        delta = month[:,1:]-month[:,:-1]
+        delta_fw = pad_fw(delta)
+        delta_bw = pad_bw(delta)
+        embedded_fw = torch.cat((embedded, delta_fw.unsqueeze(dim=-1)), dim=-1)
+        embedded_bw = torch.cat((embedded, delta_bw.unsqueeze(dim=-1)), dim=-1)
+        embedded_bw = flip_batch(embedded_bw, seq_length)
         # RNN #############################################################################################################################
-        packed = nn.utils.rnn.pack_padded_sequence(embedded, seq_length.clamp(min=1), batch_first = True, enforce_sorted = False)
-        output, _ = self.rnn(packed)
-        output, _ = nn.utils.rnn.pad_packed_sequence(output, batch_first=True)
-        output = output.view(-1, max(1, seq_length.max()), 2, self.embedding_dim) # view(batch, seq_len, num_directions, hidden_size)
-        output, _ = output.max(dim=1)
-        output.masked_fill_((seq_length == 0).view(-1, 1, 1), 0)
-        summary_0, summary_1 = output[:,0,:], output[:,1,:]
+        packed_fw = nn.utils.rnn.pack_padded_sequence(embedded_fw, seq_length.clamp(min=1), batch_first = True, enforce_sorted = False)
+        packed_bw = nn.utils.rnn.pack_padded_sequence(embedded_bw, seq_length.clamp(min=1), batch_first = True, enforce_sorted = False)
+        output_fw, _ = self.rnn_fw(packed_fw)
+        output_bw, _ = self.rnn_bw(packed_bw)
+        output_fw, _ = nn.utils.rnn.pad_packed_sequence(output_fw, batch_first=True)
+        output_bw, _ = nn.utils.rnn.pad_packed_sequence(output_bw, batch_first=True)
+        output_fw = output_fw.view(-1, max(1, seq_length.max()), self.embedding_dim) # view(batch, seq_len, num_directions=1, hidden_size)
+        output_bw = output_bw.view(-1, max(1, seq_length.max()), self.embedding_dim) # view(batch, seq_len, num_directions=1, hidden_size)
+        mask = (code>0)[:, :max(1, seq_length.max())]
+        summary_0, _ = self.attention(output_fw, mask)
+        summary_1, _ = self.attention(output_bw, mask)            
         # Fully connected layers ##########################################################################################################    
         x = torch.cat((x, summary_0, summary_1), dim=-1)
         x = self.mlp(x)
         return x
-
-
-
 
