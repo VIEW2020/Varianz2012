@@ -88,7 +88,7 @@ def objective(trial, data, df_index_code):
     # Neural Net
     hp.model_name = str(trial.number) + '_' + hp.model_name 
     num_input = x_trn.shape[1]+1 if hp.nonprop_hazards else x_trn.shape[1]
-    net = NetRNN(num_input, df_index_code.shape[0]+1, hp).to(hp.device) #+1 for zero padding
+    net = NetRNNFinal(num_input, df_index_code.shape[0]+1, hp).to(hp.device) #+1 for zero padding
     criterion = CoxPHLoss().to(hp.device)
     optimizer = optim.Adam(net.parameters(), lr=hp.learning_rate)
     

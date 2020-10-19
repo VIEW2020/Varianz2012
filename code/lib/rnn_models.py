@@ -132,17 +132,14 @@ class NetRNN(nn.Module):
 
 class NetRNNFinal(nn.Module):
     def __init__(self, num_input, num_embeddings, hp):
+        super().__init__()
         # Parameters ######################################################################################################################
-        self.nonprop_hazards = hp.nonprop_hazards
-        self.add_diagt = hp.add_diagt
-        self.add_month = hp.add_month
         self.num_months_hx = hp.num_months_hx-1
-        self.rnn_type = hp.rnn_type
         self.num_rnn_layers = hp.num_rnn_layers
         self.embedding_dim = hp.embedding_dim
-        self.summarize = hp.summarize
         # Embedding layers ################################################################################################################
         self.embed_codes = nn.Embedding(num_embeddings = num_embeddings, embedding_dim = hp.embedding_dim, padding_idx = 0)
+        self.embed_diagt = nn.Embedding(num_embeddings = 5, embedding_dim = hp.embedding_dim, padding_idx = 0)
         # RNN #############################################################################################################################
         self.embedding_dim = self.embedding_dim + 1
         self.pad_fw = ConstantPad1d((1, 0), 0.)
