@@ -46,7 +46,7 @@ def main():
         df.reset_index(drop=True, inplace=True)
         df_index_person = df['VSIMPLE_INDEX_MASTER'].reset_index().rename(columns={'index': 'INDEX_PERSON'})
 
-        # convert cathegorical ethnicity into indicator variables
+        # convert categorical ethnicity into indicator variables
         print('Create dummy variables...')
         df = pd.get_dummies(df, prefix='en_prtsd_eth', columns=['en_prtsd_eth'], drop_first=True)
         
@@ -82,38 +82,26 @@ def main():
         diagt[ac['INDEX_PERSON'].values, ac['COUNT'].values] = ac['DIAG_TYPE'].values
         
         print('-----------------------------------------')
-        print('Mark validation data...') # done this way for historical reasons
+        # data folds, stratified by event, for 5x2 cv
+        print('Exclude validation data...') # done this way for historical reasons
         df_trn, df_tst = train_test_split(df, test_size=0.1, train_size=0.8, shuffle=True, stratify=df['EVENT'])
-        df['VALIDATION'] = True
-        df.loc[df_trn.index, 'VALIDATION'] = False
-        df.loc[df_tst.index, 'VALIDATION'] = False
+        df_tmp = pd.concat([df_trn, df_tst])
 
-        # data folds stratified by event
         print('Split data into folds...')
-        df['EVENT'] = df['EVENT'].astype(bool)
-        num_event = (~df['VALIDATION'] & df['EVENT']).sum()
-        num_nonevent = (~df['VALIDATION'] & ~df['EVENT']).sum()
-        folds_event = np.zeros(num_event)
-        folds_nonevent = np.zeros(num_nonevent)
-        num_fold_event = int(np.floor(num_event/hp.num_folds))
-        num_fold_nonevent = int(np.floor(num_nonevent/hp.num_folds))
-        for i in range(1, hp.num_folds):
-            folds_event[(i*num_fold_event):((i+1)*num_fold_event)] = i
-            folds_nonevent[(i*num_fold_nonevent):((i+1)*num_fold_nonevent)] = i
-        np.random.shuffle(folds_event)
-        np.random.shuffle(folds_nonevent)
-        df['FOLD'] = 0
-        df.loc[~df['VALIDATION'] & df['EVENT'], 'FOLD'] = folds_event
-        df.loc[~df['VALIDATION'] & ~df['EVENT'], 'FOLD'] = folds_nonevent
-        df.loc[df['VALIDATION'], 'FOLD'] = 99 #don't consider for training/testing
+        for i in range(hp.num_folds):
+            df_trn, df_tst = train_test_split(df_tmp, test_size=0.5, train_size=0.5, shuffle=True, stratify=df_tmp['EVENT'])
+            df['FOLD_' + str(i)] = 99
+            df.loc[df_trn.index, 'FOLD_' + str(i)] = 0
+            df.loc[df_tst.index, 'FOLD_' + str(i)] = 1
 
         # Other arrays
+        fold_cols = ['FOLD_' + str(i) for i in range(hp.num_folds)]
         time = df['TIME'].values
         event = df['EVENT'].values.astype(int)
-        fold = df['FOLD'].values
-        df.drop(['TIME', 'EVENT', 'FOLD', 'VALIDATION', 'VSIMPLE_INDEX_MASTER', 'gender_code'], axis=1, inplace=True)
+        fold = df[fold_cols].values
+        df.drop(['TIME', 'EVENT', 'VSIMPLE_INDEX_MASTER', 'gender_code'] + fold_cols, axis=1, inplace=True)
         x = df.values.astype('float32')
-        
+
         print('-----------------------------------------')
         print('Save...')
         np.savez(hp.data_pp_dir + 'data_arrays_' + gender + '.npz', x=x, time=time, event=event, codes=codes, month=month, diagt=diagt, fold=fold)

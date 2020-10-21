@@ -15,8 +15,8 @@ class Hyperparameters:
         ### General #########################################################
         
         self.gender = 'females'
-        self.min_count = 200 # codes whose occurrence is less than min_count are encoded as OTHER
-        self.num_folds = 10
+        self.min_count = 500 # codes whose occurrence is less than min_count are encoded as OTHER
+        self.num_folds = 5
         self.num_trials = 10
         
         # Data
@@ -40,7 +40,7 @@ class Hyperparameters:
         ### Model ###########################################################
 
         self.batch_size = 256
-        self.max_epochs = 10
+        self.max_epochs = 20
         self.patience = 10 # early stopping
         self.num_months_hx = 60
         now = datetime.now() # current date and time
@@ -48,19 +48,19 @@ class Hyperparameters:
             
         # Network
         if trial:
-            self.nonprop_hazards = False #trial.suggest_categorical('nonprop_hazards', [True, False])
-            self.embedding_dim = 32 #trial.suggest_categorical('embedding_dim', [16, 32, 64, 128])
-            self.rnn_type = 'GRU' #trial.suggest_categorical('rnn_type', ['GRU', 'LSTM'])
-            self.num_rnn_layers = 3 #trial.suggest_int('num_rnn_layers', 1, 3)
+            self.nonprop_hazards = trial.suggest_categorical('nonprop_hazards', [True, False])
+            self.embedding_dim = trial.suggest_categorical('embedding_dim', [16, 32, 64, 128])
+            self.rnn_type = trial.suggest_categorical('rnn_type', ['GRU', 'LSTM'])
+            self.num_rnn_layers = trial.suggest_int('num_rnn_layers', 1, 3)
             if self.num_rnn_layers > 1:
-                self.dropout = 0.1 #trial.suggest_discrete_uniform('dropout', 0.0, 0.5, 0.1)
+                self.dropout = trial.suggest_discrete_uniform('dropout', 0.0, 0.5, 0.1)
             else:
-                self.dropout = 0.1 #trial.suggest_discrete_uniform('dropout', 0.0, 0.0, 0.1)
-            self.num_mlp_layers = 1 #trial.suggest_int('num_mlp_layers', 0, 2)
-            self.add_diagt = True #trial.suggest_categorical('add_diagt', [True, False])
-            self.add_month = 'concat' #trial.suggest_categorical('add_month', ['ignore', 'concat', 'embedding'])
-            self.summarize = trial.suggest_categorical('summarize', ['output_max', 'output_attention']) #trial.suggest_categorical('summarize', ['hidden', 'output_max', 'output_sum', 'output_avg', 'output_attention'])
-            self.learning_rate = 1e-3 #trial.suggest_categorical('learning_rate', [1e-4, 1e-3, 1e-2])
+                self.dropout = trial.suggest_discrete_uniform('dropout', 0.0, 0.0, 0.1)
+            self.num_mlp_layers = trial.suggest_int('num_mlp_layers', 0, 2)
+            self.add_diagt = trial.suggest_categorical('add_diagt', [True, False])
+            self.add_month = trial.suggest_categorical('add_month', ['ignore', 'concat', 'embedding'])
+            self.summarize = trial.suggest_categorical('summarize', ['hidden', 'output_max', 'output_sum', 'output_avg', 'output_attention'])
+            self.learning_rate = trial.suggest_categorical('learning_rate', [1e-4, 1e-3, 1e-2])
         else:
             self.nonprop_hazards = False
             self.embedding_dim = 32
@@ -70,6 +70,6 @@ class Hyperparameters:
             self.num_mlp_layers = 1
             self.add_diagt = True
             self.add_month = 'concat'
-            self.summarize = 'output_max'
+            self.summarize = 'output_attention'
             self.learning_rate = 1e-3
         
