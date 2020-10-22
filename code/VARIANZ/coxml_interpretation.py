@@ -81,17 +81,15 @@ def main():
     print('Compute HRs...')
 
     # Trained models
-    models = []
-    for fold in range(hp.num_folds):
-        tmp = listdir(hp.log_dir + 'fold_' + str(fold) + '/')
-        models = models + ['fold_' + str(fold) + '/' + i for i in tmp if '.pt' in i]    
+    tmp = listdir(hp.log_dir + 'all/')
+    models = ['all/' + i for i in tmp if '.pt' in i]    
 
     log_hr_columns = np.zeros((num_cols, len(models)))
     log_hr_embeddings = np.zeros((num_embeddings, len(models)))
 
     # Neural Net
     num_input = num_cols+1 if hp.nonprop_hazards else num_cols
-    net = NetRNN(num_input, num_embeddings+1, hp).to(hp.device) #+1 for zero padding
+    net = NetRNNFinal(num_input, num_embeddings+1, hp).to(hp.device) #+1 for zero padding
     net.eval()
 
     for i in range(len(models)):
@@ -128,7 +126,6 @@ def main():
                 month_b = torch.zeros((1, 1), device=hp.device)
                 diagt_b = torch.zeros((1, 1), device=hp.device)
                 codes_b[0] = (j+1)
-                month_b[0] = 59
                 diagt_b[0] = df_index_code['DIAG_TYPE'].values[j]
                 risk_mod = net(x_b, codes_b, month_b, diagt_b).detach().cpu().numpy().squeeze() - risk_baseline
             
