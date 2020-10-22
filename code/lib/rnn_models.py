@@ -143,13 +143,10 @@ class NetRNNFinal(nn.Module):
         # RNN #############################################################################################################################
         self.embedding_dim = self.embedding_dim + 1
         self.pad_fw = ConstantPad1d((1, 0), 0.)
-        self.pad_bw = ConstantPad1d((0, 1), 0.)
         self.rnn_fw =  GRU(input_size = self.embedding_dim, hidden_size = self.embedding_dim, num_layers = self.num_rnn_layers, batch_first = True, dropout = hp.dropout, bidirectional = False)
-        self.rnn_bw =  GRU(input_size = self.embedding_dim, hidden_size = self.embedding_dim, num_layers = self.num_rnn_layers, batch_first = True, dropout = hp.dropout, bidirectional = False)
         self.attention_fw = Attention(embedding_dim = self.embedding_dim)
-        self.attention_bw = Attention(embedding_dim = self.embedding_dim)
         # Fully connected layers ##########################################################################################################
-        fc_size = num_input + 2*self.embedding_dim
+        fc_size = num_input + self.embedding_dim
         layers = []
         layers.append(nn.Linear(fc_size, fc_size))
         layers.append(nn.ELU())
@@ -165,24 +162,15 @@ class NetRNNFinal(nn.Module):
         month = month/float(self.num_months_hx)
         delta = torch.clamp(month[:,1:]-month[:,:-1], min=0)
         delta_fw = self.pad_fw(delta)
-        delta_bw = self.pad_bw(delta)
         embedded_fw = torch.cat((embedded, delta_fw.unsqueeze(dim=-1)), dim=-1)
-        embedded_bw = torch.cat((embedded, delta_bw.unsqueeze(dim=-1)), dim=-1)
-        embedded_bw = flip_batch(embedded_bw, seq_length)
         # RNN #############################################################################################################################
         packed_fw = nn.utils.rnn.pack_padded_sequence(embedded_fw, seq_length.clamp(min=1), batch_first = True, enforce_sorted = False)
-        packed_bw = nn.utils.rnn.pack_padded_sequence(embedded_bw, seq_length.clamp(min=1), batch_first = True, enforce_sorted = False)
         output_fw, _ = self.rnn_fw(packed_fw)
-        output_bw, _ = self.rnn_bw(packed_bw)
         output_fw, _ = nn.utils.rnn.pad_packed_sequence(output_fw, batch_first=True)
-        output_bw, _ = nn.utils.rnn.pad_packed_sequence(output_bw, batch_first=True)
         output_fw = output_fw.view(-1, max(1, seq_length.max()), self.embedding_dim) # view(batch, seq_len, num_directions=1, hidden_size)
-        output_bw = output_bw.view(-1, max(1, seq_length.max()), self.embedding_dim) # view(batch, seq_len, num_directions=1, hidden_size)
-        mask = (code>0)[:, :max(1, seq_length.max())]
-        summary_0, _ = self.attention_fw(output_fw, mask)
-        summary_1, _ = self.attention_bw(output_bw, mask)            
+        summary_0, _ = output_fw.max(dim=1)
         # Fully connected layers ##########################################################################################################    
-        x = torch.cat((x, summary_0, summary_1), dim=-1)
+        x = torch.cat((x, summary_0), dim=-1)
         x = self.mlp(x)
         return x
 
