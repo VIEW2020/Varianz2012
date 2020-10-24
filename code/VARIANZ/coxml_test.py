@@ -79,10 +79,11 @@ def main():
                 lph_matrix[:, i] = log_partial_hazard
 
             print('Create dataframe...')
-            df_lph = pd.DataFrame(lph_matrix, columns=models)
+            df_cml = pd.DataFrame(lph_matrix, columns=models)
+            df_cml['LPH'] = lph_matrix.mean(axis=1)
             
             print('Saving log proportional hazards for fold...')
-            df_lph.to_feather(hp.results_dir + 'df_lph_' + hp.gender + '_fold_' + str(fold) + '_' + str(swap) + '.feather')
+            df_cml.to_feather(hp.results_dir + 'df_cml_' + hp.gender + '_fold_' + str(fold) + '_' + str(swap) + '.feather')
     
     
 if __name__ == '__main__':
