@@ -168,7 +168,8 @@ class NetRNNFinal(nn.Module):
         output_fw, _ = self.rnn_fw(packed_fw)
         output_fw, _ = nn.utils.rnn.pad_packed_sequence(output_fw, batch_first=True)
         output_fw = output_fw.view(-1, max(1, seq_length.max()), self.embedding_dim) # view(batch, seq_len, num_directions=1, hidden_size)
-        summary_0, _ = output_fw.max(dim=1)
+        mask = (code>0)[:, :max(1, seq_length.max())]
+        summary_0, _ = self.attention_fw(output_fw, mask)
         # Fully connected layers ##########################################################################################################    
         x = torch.cat((x, summary_0), dim=-1)
         x = self.mlp(x)
