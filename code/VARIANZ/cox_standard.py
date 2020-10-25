@@ -10,7 +10,6 @@ sys.path.append('../lib/')
 import numpy as np
 import pandas as pd
 from lifelines import CoxPHFitter
-from EvalSurv import EvalSurv
 from utils import *
 import feather
 from hyperparameters import Hyperparameters

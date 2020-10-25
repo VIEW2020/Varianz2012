@@ -14,10 +14,10 @@ class Hyperparameters:
     
         ### General #########################################################
         
-        self.gender = 'females'
+        self.gender = 'males'
         self.min_count = 500 # codes whose occurrence is less than min_count are encoded as OTHER
         self.num_folds = 5
-        self.num_trials = 50
+        self.num_trials = 10
         
         # Data
         self.data_dir = '../../data/'
