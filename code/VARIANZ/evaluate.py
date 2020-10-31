@@ -32,16 +32,19 @@ def main():
     
     df = pd.DataFrame({'TIME': data['time'], 'EVENT': data['event']})
 
-    #baseline survival
-    #df_cox = df.copy()
-    #df_cml = df.copy()
-    #df_cox['LPH'] = feather.read_dataframe(hp.results_dir + 'df_cox_' + hp.gender + '.feather')['LPH']
-    #df_cml['LPH'] = feather.read_dataframe(hp.results_dir + 'df_cml_' + hp.gender + '.feather')['LPH']    
-    #es_cox = EvalSurv(df_cox.copy())
-    #es_cml = EvalSurv(df_cml.copy())    
-    #print('Base survival Cox: {:.5}'.format(es_cox.get_base_surv(1826)))
-    #print('Base survival CML: {:.5}'.format(es_cml.get_base_surv(1826)))
-    #return    
+    #baseline survival CML
+    df_cml = df.copy()
+    lph_matrix = np.zeros((df_cml.shape[0], hp.num_folds*2))
+    for fold in range(hp.num_folds):
+        for swap in range(2):
+            print('Fold: {} Swap: {}'.format(fold, swap))
+            idx = (data['fold'][:, fold] == swap)
+            lph_matrix[idx, fold] = feather.read_dataframe(hp.results_dir + 'df_cml_' + hp.gender + '_fold_' + str(fold) + '_' + str(swap) + '.feather')['LPH']
+            bp()
+    df_cml['LPH'] = lph_matrix.mean(axis=1)
+    es_cml = EvalSurv(df_cml.copy())
+    print('Base survival CML: {:.5}'.format(es_cml.get_base_surv(1826)))
+    return    
 
     # evaluation vectors
     d_index_vec_cox = np.zeros((hp.num_folds, 2))
