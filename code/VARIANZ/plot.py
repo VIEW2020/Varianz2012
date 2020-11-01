@@ -274,11 +274,11 @@ def main():
     
     ax_plt = ax_cal[2][0]
     calibration_plot(df_cox_red, df_cml_red, ax_plt)
-    ax_plt.title.set_text('Calibration: NZ European Men') if hp.gender == 'males' else ax_plt.title.set_text('Calibration: NZ European Women')
+    ax_plt.title.set_text('Calibration: European Men') if hp.gender == 'males' else ax_plt.title.set_text('Calibration: European Women')
 
     ax_plt = ax_dis[2][0]
     discrimination_plot(df_cox_red, df_cml_red, ax_plt)
-    ax_plt.title.set_text('Discrimination: NZ European Men') if hp.gender == 'males' else ax_plt.title.set_text('Discrimination: NZ European Women')
+    ax_plt.title.set_text('Discrimination: European Men') if hp.gender == 'males' else ax_plt.title.set_text('Discrimination: European Women')
 
     ax_cal[2, 1].axis('off')
     ax_dis[2, 1].axis('off')
