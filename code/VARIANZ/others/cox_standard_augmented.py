@@ -5,7 +5,8 @@ https://www.github.com/sebbarb/
 '''
 
 import sys
-sys.path.append('../lib/')
+sys.path.append('../../lib/')
+sys.path.append('..')
 
 import numpy as np
 import pandas as pd
@@ -22,14 +23,14 @@ def main():
     # Load data
     print('Load data...')
     hp = Hyperparameters()
-    data = np.load(hp.data_pp_dir + 'data_arrays_' + hp.gender + '.npz')
+    data = np.load('../' + hp.data_pp_dir + 'data_arrays_' + hp.gender + '.npz')
     
     print('Use all data for model fitting...')
     x = data['x']
     time = data['time']
     event = data['event']
     
-    cols_list = load_obj(hp.data_pp_dir + 'cols_list.pkl')
+    cols_list = load_obj('../' + hp.data_pp_dir + 'cols_list.pkl')
     
     df = pd.DataFrame(x, columns=cols_list)
     df['TIME'] = time
@@ -38,7 +39,7 @@ def main():
     ###################################################################
     
     print('Add additional columns...')
-    df_index_code = feather.read_dataframe(hp.results_dir + 'hr_addcodes_' + hp.gender + '.feather')
+    df_index_code = feather.read_dataframe('../' + hp.results_dir + 'hr_addcodes_' + hp.gender + '.feather')
     df_index_code = pd.concat([df_index_code[df_index_code['TYPE']==1].head(10), df_index_code[df_index_code['TYPE']==0].head(10)], sort=False)
     
     for index, row in df_index_code.iterrows():
@@ -54,10 +55,10 @@ def main():
     cph.print_summary()
     print('done')
     
-    print('Saving...')
-    df_summary = cph.summary
-    df_summary['PREDICTOR'] = cols_list
-    df_summary.to_csv(hp.results_dir + 'hr_augmented_' + hp.gender + '.csv', index=False)
+    # print('Saving...')
+    # df_summary = cph.summary
+    # df_summary['PREDICTOR'] = cols_list
+    # df_summary.to_csv(hp.results_dir + 'hr_augmented_' + hp.gender + '.csv', index=False)
     
 
 if __name__ == '__main__':
