@@ -23,7 +23,7 @@ from utils import *
 from pdb import set_trace as bp
 
 
-def calibration_plot(df_cox, df_cml, ax=None, **plt_kwargs):
+def calibration_plot(df_cox, df_cml, ax=None, ylim=None):
     if ax is None:
         ax = plt.gca()
 
@@ -42,15 +42,16 @@ def calibration_plot(df_cox, df_cml, ax=None, **plt_kwargs):
     df_cox.reset_index(inplace=True)
     df_cml.reset_index(inplace=True)
     
-    ax.scatter(df_cox['EVENT_PERC'], df_cox['RISK_PERC'], c='lightcoral')
     ax.scatter(df_cml['EVENT_PERC'], df_cml['RISK_PERC'], c='cornflowerblue')
+    ax.scatter(df_cox['EVENT_PERC'], df_cox['RISK_PERC'], c='lightcoral')
 
-    ax.legend(['CVD Equations', 'Deep Learning'])
+    ax.legend(['Deep Learning', 'Cox\'s Propotional Hazards'])
 
-    lim = max([df_cox['EVENT_PERC'].max(), df_cox['RISK_PERC'].max(), df_cml['EVENT_PERC'].max(), df_cml['RISK_PERC'].max()])+0.5
-    ax.set_xlim(0, lim)
-    ax.set_ylim(0, lim)
-    ax.plot([0, lim], [0, lim], color = 'black', linewidth = 1)
+    if ylim is None:
+        ylim = max([df_cox['EVENT_PERC'].max(), df_cox['RISK_PERC'].max(), df_cml['EVENT_PERC'].max(), df_cml['RISK_PERC'].max()])+0.5
+    ax.set_xlim(0, ylim)
+    ax.set_ylim(0, ylim)
+    ax.plot([0, ylim], [0, ylim], color = 'black', linewidth = 1)
     
     ax.set_xlabel('Observed events [%]')
     ax.set_ylabel('Mean predicted 5 year risk [%]')
@@ -58,7 +59,7 @@ def calibration_plot(df_cox, df_cml, ax=None, **plt_kwargs):
     return(ax)
 
 
-def discrimination_plot(df_cox, df_cml, ax=None, **plt_kwargs):
+def discrimination_plot(df_cox, df_cml, ax=None, ylim=None):
     if ax is None:
         ax = plt.gca()
 
@@ -77,10 +78,13 @@ def discrimination_plot(df_cox, df_cml, ax=None, **plt_kwargs):
     df_cox.reset_index(inplace=True)
     df_cml.reset_index(inplace=True)
     
-    ax.scatter(df_cox['QUANTILE'].astype(float)-0.1, df_cox['EVENT_PERC_TOTAL'], c='lightcoral')
     ax.scatter(df_cml['QUANTILE'].astype(float)+0.1, df_cml['EVENT_PERC_TOTAL'], c='cornflowerblue')
+    ax.scatter(df_cox['QUANTILE'].astype(float)-0.1, df_cox['EVENT_PERC_TOTAL'], c='lightcoral')
 
-    ax.legend(['CVD Equations', 'Deep Learning'])
+    ax.legend(['Deep Learning', 'Cox\'s Propotional Hazards'])
+
+    if ylim is not None:
+        ax.set_ylim(0, ylim)
     
     ax.set_xlabel('Deciles of predicted risk')
     ax.set_ylabel('Proportion of all CVD events [%]')
