@@ -49,7 +49,7 @@ def calibration_plot(df_cox, df_cml, ax=None, ylim=None):
     ax.legend(['Deep Learning', 'Cox\'s Propotional Hazards'])
 
     if ylim is None:
-        ylim = max([df_cox['EVENT_PERC'].max(), df_cox['RISK_PERC'].max(), df_cml['EVENT_PERC'].max(), df_cml['RISK_PERC'].max()])+0.5
+        ylim = max([df_cox['EVENT_PERC'].max(), df_cox['RISK_PERC'].max(), df_cml['EVENT_PERC'].max(), df_cml['RISK_PERC'].max()])+1
     ax.set_xlim(0, ylim)
     ax.set_ylim(0, ylim)
     ax.plot([0, ylim], [0, ylim], color = 'black', linewidth = 1)
