@@ -41,7 +41,7 @@ def main():
             idx = (data['fold'][:, fold] == swap)
             lph_matrix[idx, fold] = feather.read_dataframe(hp.results_dir + 'df_cml_' + hp.gender + '_fold_' + str(fold) + '_' + str(swap) + '.feather')['LPH']
     df_cml['LPH'] = lph_matrix.mean(axis=1)
-    idx = (data['fold'][:, fold] < 99) #exclude validation fold
+    idx = (data['fold'][:, fold] != 99) #exclude validation fold
     df_cml = df_cml[idx].reset_index(drop=True)
     es_cml = EvalSurv(df_cml.copy())
     print('Base survival CML: {:.13}'.format(es_cml.get_base_surv(1826)))

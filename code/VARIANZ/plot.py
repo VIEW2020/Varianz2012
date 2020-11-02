@@ -13,12 +13,13 @@ import feather
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-mpl.rc('font',**{'family':'sans-serif', 'sans-serif':['DejaVu Sans'], 'size':18})
+mpl.rc('font',**{'family':'Times New Roman', 'size':18})
 plt.rcParams['axes.linewidth'] = 1
 plt.rcParams['axes.linewidth'] = 1
 
 from hyperparameters import Hyperparameters
 from utils import *
+from EvalSurv import EvalSurv
 
 from pdb import set_trace as bp
 
@@ -99,6 +100,7 @@ def main():
     data = np.load(hp.data_pp_dir + 'data_arrays_' + hp.gender + '.npz')
     means = np.load(hp.data_pp_dir + 'means_' + hp.gender + '.npz')
     x = data['x']
+    time = data['time']
     event = data['event']
     cols_list = load_obj(hp.data_pp_dir + 'cols_list.pkl')
     
@@ -107,19 +109,35 @@ def main():
     x[:, cols_list.index('en_nzdep_q')] += means['mean_nzdep']
     
     df_cox = pd.DataFrame(x, columns=cols_list)
+    df_cox['TIME'] = time
     df_cox['EVENT'] = event
     
     df_cml = pd.DataFrame(x, columns=cols_list)
+    df_cml['TIME'] = time
     df_cml['EVENT'] = event
     
     # load predicted risk
-    df_cox['RISK_PERC'] = feather.read_dataframe(hp.results_dir + 'df_cox_' + hp.gender + '.feather')['RISK_PERC']
-    df_cml['RISK_PERC'] = feather.read_dataframe(hp.results_dir + 'df_cml_' + hp.gender + '.feather')['RISK_PERC']
+    lph_matrix_cox = np.zeros((df_cox.shape[0], hp.num_folds))
+    lph_matrix_cml = np.zeros((df_cml.shape[0], hp.num_folds))
+    for fold in range(hp.num_folds):
+        for swap in range(2):
+            print('Fold: {} Swap: {}'.format(fold, swap))
+            idx = (data['fold'][:, fold] == swap)
+            lph_matrix_cox[idx, fold] = feather.read_dataframe(hp.results_dir + 'df_cox_' + hp.gender + '_fold_' + str(fold) + '_' + str(swap) + '.feather')['LPH']
+            lph_matrix_cml[idx, fold] = feather.read_dataframe(hp.results_dir + 'df_cml_' + hp.gender + '_fold_' + str(fold) + '_' + str(swap) + '.feather')['LPH']
+    df_cox['LPH'] = lph_matrix_cox.mean(axis=1)
+    df_cml['LPH'] = lph_matrix_cml.mean(axis=1)
     
     # remove validation data
-    df_cox = df_cox[data['fold'] != 99]
-    df_cml = df_cml[data['fold'] != 99]
-
+    idx = (data['fold'][:, fold] != 99)
+    df_cox = df_cox[idx].reset_index(drop=True)
+    df_cml = df_cml[idx].reset_index(drop=True)
+    es_cox = EvalSurv(df_cox.copy())
+    es_cml = EvalSurv(df_cml.copy())
+    
+    df_cox['RISK_PERC'] = es_cox.get_risk_perc(1826)
+    df_cml['RISK_PERC'] = es_cml.get_risk_perc(1826)
+    
     ################################################################################################
 
     print('Plot all...')
@@ -260,11 +278,11 @@ def main():
     
     ax_plt = ax_cal[2][0]
     calibration_plot(df_cox_red, df_cml_red, ax_plt)
-    ax_plt.title.set_text('Calibration: NZ European Men') if hp.gender == 'males' else ax_plt.title.set_text('Calibration: NZ European Women')
+    ax_plt.title.set_text('Calibration: European Men') if hp.gender == 'males' else ax_plt.title.set_text('Calibration: European Women')
 
     ax_plt = ax_dis[2][0]
     discrimination_plot(df_cox_red, df_cml_red, ax_plt)
-    ax_plt.title.set_text('Discrimination: NZ European Men') if hp.gender == 'males' else ax_plt.title.set_text('Discrimination: NZ European Women')
+    ax_plt.title.set_text('Discrimination: European Men') if hp.gender == 'males' else ax_plt.title.set_text('Discrimination: European Women')
 
     ax_cal[2, 1].axis('off')
     ax_dis[2, 1].axis('off')
