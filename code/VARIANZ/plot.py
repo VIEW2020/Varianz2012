@@ -46,7 +46,7 @@ def calibration_plot(df_cox, df_cml, ax=None, ylim=None):
     ax.scatter(df_cml['EVENT_PERC'], df_cml['RISK_PERC'], c='cornflowerblue')
     ax.scatter(df_cox['EVENT_PERC'], df_cox['RISK_PERC'], c='lightcoral')
 
-    ax.legend(['Deep Learning', 'Cox\'s Propotional Hazards'])
+    ax.legend(['Deep Learning', 'Cox Propotional Hazards'])
 
     if ylim is None:
         ylim = max([df_cox['EVENT_PERC'].max(), df_cox['RISK_PERC'].max(), df_cml['EVENT_PERC'].max(), df_cml['RISK_PERC'].max()])+1
@@ -82,7 +82,7 @@ def discrimination_plot(df_cox, df_cml, ax=None, ylim=None):
     ax.scatter(df_cml['QUANTILE'].astype(float)+0.1, df_cml['EVENT_PERC_TOTAL'], c='cornflowerblue')
     ax.scatter(df_cox['QUANTILE'].astype(float)-0.1, df_cox['EVENT_PERC_TOTAL'], c='lightcoral')
 
-    ax.legend(['Deep Learning', 'Cox\'s Propotional Hazards'])
+    ax.legend(['Deep Learning', 'Cox Propotional Hazards'])
 
     if ylim is not None:
         ax.set_ylim(0, ylim)

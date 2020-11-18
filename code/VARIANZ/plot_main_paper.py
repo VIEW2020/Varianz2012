@@ -13,7 +13,7 @@ import feather
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-mpl.rc('font',**{'family':'sans-serif', 'sans-serif':['DejaVu Sans'], 'size':18})
+mpl.rc('font',**{'family':'Times New Roman', 'size':18})
 plt.rcParams['axes.linewidth'] = 1
 plt.rcParams['axes.linewidth'] = 1
 
