@@ -35,6 +35,8 @@ def main():
     # Load data
     print('Load data...')
     hp = Hyperparameters()
+    df_index_code = feather.read_dataframe(hp.data_pp_dir + 'df_index_code_' + hp.gender + '.feather')
+    num_embeddings = df_index_code.shape[0]
     means = np.load(hp.data_pp_dir + 'means_' + hp.gender + '.npz')
 
     print('Add standard columns...')
@@ -70,16 +72,16 @@ def main():
                 month_b = torch.zeros((1, 1), device=hp.device)
                 diagt_b = torch.zeros((1, 1), device=hp.device)
                 x_b[0, cols_list.index('nhi_age')] = j - means['mean_age']
-                risk_mod = net(x_b, codes_b, month_b, diagt_b).detach().cpu().numpy().squeeze() - risk_baseline
+                log_hr = net(x_b, codes_b, month_b, diagt_b).detach().cpu().numpy().squeeze()
             
             # Store
-            log_hr_matrix[j-30, i] = risk_mod
+            log_hr_matrix[j-30, i] = log_hr
     
     # Compute HRs
-    mean_hr = np.exp(log_hr_matrix.mean(axis=1))
-    lCI, uCI = np.exp(sms.DescrStatsW(log_hr_matrix.transpose()).tconfint_mean())
+    mean_hr = (log_hr_matrix.mean(axis=1))
+    lCI, uCI = (sms.DescrStatsW(log_hr_matrix.transpose()).tconfint_mean())
     df = pd.DataFrame({'age': range(30, 75), 'HR': mean_hr, 'lCI': lCI, 'uCI': uCI})
-    df['diff'] = df['HR'].diff()
+    df['diff_hr'] = np.exp(df['HR'].diff())
     
     bp()
     
