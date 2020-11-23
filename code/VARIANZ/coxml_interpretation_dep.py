@@ -79,11 +79,10 @@ def main():
     
     # Compute HRs
     mean_hr = (log_hr_matrix.mean(axis=1))
-    lCI, uCI = (sms.DescrStatsW(log_hr_matrix.transpose()).tconfint_mean())
-    df = pd.DataFrame({'dep': range(1, 6), 'HR': mean_hr, 'lCI': lCI, 'uCI': uCI})
+    df = pd.DataFrame({'dep': range(1, 6), 'HR': mean_hr})
     df['diff_hr'] = np.exp(df['HR'].diff())
-    
-    bp()
+    print(df.describe())
+
     
 if __name__ == '__main__':
     main()
