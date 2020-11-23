@@ -123,10 +123,12 @@ def main():
     fig.tight_layout()
     fig.subplots_adjust(wspace = 0.3, hspace = 0.3)
     fig.savefig(hp.plots_dir + 'all.png')    
+    fig.savefig(hp.plots_dir + 'all.pdf')
     
     fig_cal.tight_layout()
     fig_cal.subplots_adjust(wspace = 0.3, hspace = 0.3)
     fig_cal.savefig(hp.plots_dir + 'examples_calibration.png')
+    fig_cal.savefig(hp.plots_dir + 'examples_calibration.pdf')
         
     
 if __name__ == '__main__':
