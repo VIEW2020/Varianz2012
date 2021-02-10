@@ -17,7 +17,7 @@ class Hyperparameters:
         self.gender = 'females'
         self.min_count = 500 # codes whose occurrence is less than min_count are encoded as OTHER
         self.num_folds = 5
-        self.num_trials = 10
+        self.num_trials = 100
         
         # Data
         self.data_dir = '../../data/'
@@ -73,3 +73,4 @@ class Hyperparameters:
             self.summarize = 'output_attention'
             self.learning_rate = 1e-3
         
+        self.redundant_predictors = False

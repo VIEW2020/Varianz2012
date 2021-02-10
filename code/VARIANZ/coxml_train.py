@@ -44,6 +44,13 @@ def main():
     sort_idx, case_idx, max_idx_control = sort_and_case_indices(x, time, event)
     x, time, event = x[sort_idx], time[sort_idx], event[sort_idx]
     codes, month, diagt = codes[sort_idx], month[sort_idx], diagt[sort_idx]
+
+    if not hp.redundant_predictors:
+        cols_list = load_obj(hp.data_pp_dir + 'cols_list.pkl')
+        bp()
+        red_col_list = cols_list
+        red_col_list.remove('..')
+        x = x[:, [col_list.index(i) for i in red_col_list]]
     
     print('Create data loaders and tensors...')
     case = utils.TensorDataset(torch.from_numpy(x[case_idx]),
@@ -76,7 +83,11 @@ def main():
         
         for epoch in range(hp.max_epochs):
             trn(trn_loader, x, codes, month, diagt, net, criterion, optimizer, hp)
-        torch.save(net.state_dict(), hp.log_dir + 'all/' + hp.model_name)
+            
+        if hp.redundant_predictors:
+            torch.save(net.state_dict(), hp.log_dir + 'all/' + hp.model_name)
+        else:
+            torch.save(net.state_dict(), hp.log_dir + 'all_no_redundancies/' + hp.model_name)
         print('Done')        
             
             
