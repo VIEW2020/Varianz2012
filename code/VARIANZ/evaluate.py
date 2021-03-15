@@ -33,22 +33,22 @@ def main():
     df = pd.DataFrame({'TIME': data['time'], 'EVENT': data['event']})
 
     #baseline survival CML
-    df_cml = df.copy()
-    lph_matrix = np.zeros((df_cml.shape[0], hp.num_folds))
-    for fold in range(hp.num_folds):
-        for swap in range(2):
-            print('Fold: {} Swap: {}'.format(fold, swap))
-            idx = (data['fold'][:, fold] == swap)
-            if hp.redundant_predictors:
-                lph_matrix[idx, fold] = feather.read_dataframe(hp.results_dir + 'df_cml_' + hp.gender + '_fold_' + str(fold) + '_' + str(swap) + '.feather')['LPH']
-            else:
-                lph_matrix[idx, fold] = feather.read_dataframe(hp.results_dir + 'df_cml_' + hp.gender + '_fold_' + str(fold) + '_' + str(swap) + '_no_redundancies.feather')['LPH']
-    df_cml['LPH'] = lph_matrix.mean(axis=1)
-    idx = (data['fold'][:, fold] != 99) #exclude validation fold
-    df_cml = df_cml[idx].reset_index(drop=True)
-    es_cml = EvalSurv(df_cml.copy())
-    print('Base survival CML: {:.13}'.format(es_cml.get_base_surv(1826)))
-    return    
+    # df_cml = df.copy()
+    # lph_matrix = np.zeros((df_cml.shape[0], hp.num_folds))
+    # for fold in range(hp.num_folds):
+        # for swap in range(2):
+            # print('Fold: {} Swap: {}'.format(fold, swap))
+            # idx = (data['fold'][:, fold] == swap)
+            # if hp.redundant_predictors:
+                # lph_matrix[idx, fold] = feather.read_dataframe(hp.results_dir + 'df_cml_' + hp.gender + '_fold_' + str(fold) + '_' + str(swap) + '.feather')['LPH']
+            # else:
+                # lph_matrix[idx, fold] = feather.read_dataframe(hp.results_dir + 'df_cml_' + hp.gender + '_fold_' + str(fold) + '_' + str(swap) + '_no_redundancies.feather')['LPH']
+    # df_cml['LPH'] = lph_matrix.mean(axis=1)
+    # idx = (data['fold'][:, fold] != 99) #exclude validation fold
+    # df_cml = df_cml[idx].reset_index(drop=True)
+    # es_cml = EvalSurv(df_cml.copy())
+    # print('Base survival CML: {:.13}'.format(es_cml.get_base_surv(1826)))
+    # return    
 
     # evaluation vectors
     d_index_vec_cox = np.zeros((hp.num_folds, 2))

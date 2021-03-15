@@ -73,6 +73,6 @@ class Hyperparameters:
             self.summarize = 'output_attention'
             self.learning_rate = 1e-3
         
-        self.redundant_predictors = False
+        self.redundant_predictors = True
         self.reduced_col_list = ['nhi_age', 'en_nzdep_q', 'en_prtsd_eth_2', 'en_prtsd_eth_3', 'en_prtsd_eth_9', 'en_prtsd_eth_43']
 
