@@ -41,16 +41,13 @@ def main():
     month = data['month']
     diagt = data['diagt']
 
+    if not hp.redundant_predictors:
+        cols_list = load_obj(hp.data_pp_dir + 'cols_list.pkl')
+        x = x[:, [cols_list.index(i) for i in hp.reduced_col_list]]
+
     sort_idx, case_idx, max_idx_control = sort_and_case_indices(x, time, event)
     x, time, event = x[sort_idx], time[sort_idx], event[sort_idx]
     codes, month, diagt = codes[sort_idx], month[sort_idx], diagt[sort_idx]
-
-    if not hp.redundant_predictors:
-        cols_list = load_obj(hp.data_pp_dir + 'cols_list.pkl')
-        bp()
-        red_col_list = cols_list
-        red_col_list.remove('..')
-        x = x[:, [col_list.index(i) for i in red_col_list]]
     
     print('Create data loaders and tensors...')
     case = utils.TensorDataset(torch.from_numpy(x[case_idx]),

@@ -46,6 +46,10 @@ def main():
             month = data['month'][idx]
             diagt = data['diagt'][idx]
 
+            if not hp.redundant_predictors:
+                cols_list = load_obj(hp.data_pp_dir + 'cols_list.pkl')
+                x = x[:, [cols_list.index(i) for i in hp.reduced_col_list]]
+
             sort_idx, case_idx, max_idx_control = sort_and_case_indices(x, time, event)
             x, time, event = x[sort_idx], time[sort_idx], event[sort_idx]
             codes, month, diagt = codes[sort_idx], month[sort_idx], diagt[sort_idx]
@@ -81,7 +85,10 @@ def main():
                 
                 for epoch in range(hp.max_epochs):
                     trn(trn_loader, x, codes, month, diagt, net, criterion, optimizer, hp)
-                torch.save(net.state_dict(), hp.log_dir + 'fold_' + str(fold) + '_' + str(swap) + '/' + hp.model_name)
+                if hp.redundant_predictors:
+                    torch.save(net.state_dict(), hp.log_dir + 'fold_' + str(fold) + '_' + str(swap) + '/' + hp.model_name)
+                else:
+                    torch.save(net.state_dict(), hp.log_dir + 'fold_' + str(fold) + '_' + str(swap) + '_no_redundancies/' + hp.model_name)
                 print('Done')        
             
             

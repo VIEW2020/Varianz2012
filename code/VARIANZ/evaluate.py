@@ -39,7 +39,10 @@ def main():
         for swap in range(2):
             print('Fold: {} Swap: {}'.format(fold, swap))
             idx = (data['fold'][:, fold] == swap)
-            lph_matrix[idx, fold] = feather.read_dataframe(hp.results_dir + 'df_cml_' + hp.gender + '_fold_' + str(fold) + '_' + str(swap) + '.feather')['LPH']
+            if hp.redundant_predictors:
+                lph_matrix[idx, fold] = feather.read_dataframe(hp.results_dir + 'df_cml_' + hp.gender + '_fold_' + str(fold) + '_' + str(swap) + '.feather')['LPH']
+            else:
+                lph_matrix[idx, fold] = feather.read_dataframe(hp.results_dir + 'df_cml_' + hp.gender + '_fold_' + str(fold) + '_' + str(swap) + '_no_redundancies.feather')['LPH']
     df_cml['LPH'] = lph_matrix.mean(axis=1)
     idx = (data['fold'][:, fold] != 99) #exclude validation fold
     df_cml = df_cml[idx].reset_index(drop=True)
@@ -73,7 +76,10 @@ def main():
 
             # load log partial hazards
             df_cox['LPH'] = feather.read_dataframe(hp.results_dir + 'df_cox_' + hp.gender + '_fold_' + str(fold) + '_' + str(swap) + '.feather')['LPH']
-            df_cml['LPH'] = feather.read_dataframe(hp.results_dir + 'df_cml_' + hp.gender + '_fold_' + str(fold) + '_' + str(swap) + '.feather')['LPH']
+            if hp.redundant_predictors:
+                df_cml['LPH'] = feather.read_dataframe(hp.results_dir + 'df_cml_' + hp.gender + '_fold_' + str(fold) + '_' + str(swap) + '.feather')['LPH']
+            else:
+                df_cml['LPH'] = feather.read_dataframe(hp.results_dir + 'df_cml_' + hp.gender + '_fold_' + str(fold) + '_' + str(swap) + '_no_redundancies.feather')['LPH']
     
             ################################################################################################
                                         
@@ -93,9 +99,14 @@ def main():
             auc_vec_cml[fold, swap] = es_cml.auc(1826)
 
     print('Save...')
-    np.savez(hp.results_dir + 'eval_vecs_' + hp.gender + '.npz', 
-             r2_vec_cox=r2_vec_cox, d_index_vec_cox=d_index_vec_cox, concordance_vec_cox=concordance_vec_cox, ibs_vec_cox=ibs_vec_cox, auc_vec_cox=auc_vec_cox, 
-             r2_vec_cml=r2_vec_cml, d_index_vec_cml=d_index_vec_cml, concordance_vec_cml=concordance_vec_cml, ibs_vec_cml=ibs_vec_cml, auc_vec_cml=auc_vec_cml)
+    if hp.redundant_predictors:
+        np.savez(hp.results_dir + 'eval_vecs_' + hp.gender + '.npz', 
+                 r2_vec_cox=r2_vec_cox, d_index_vec_cox=d_index_vec_cox, concordance_vec_cox=concordance_vec_cox, ibs_vec_cox=ibs_vec_cox, auc_vec_cox=auc_vec_cox, 
+                 r2_vec_cml=r2_vec_cml, d_index_vec_cml=d_index_vec_cml, concordance_vec_cml=concordance_vec_cml, ibs_vec_cml=ibs_vec_cml, auc_vec_cml=auc_vec_cml)
+    else:
+        np.savez(hp.results_dir + 'eval_vecs_' + hp.gender + '_no_redundancies.npz', 
+                 r2_vec_cox=r2_vec_cox, d_index_vec_cox=d_index_vec_cox, concordance_vec_cox=concordance_vec_cox, ibs_vec_cox=ibs_vec_cox, auc_vec_cox=auc_vec_cox, 
+                 r2_vec_cml=r2_vec_cml, d_index_vec_cml=d_index_vec_cml, concordance_vec_cml=concordance_vec_cml, ibs_vec_cml=ibs_vec_cml, auc_vec_cml=auc_vec_cml)
 
     
 if __name__ == '__main__':

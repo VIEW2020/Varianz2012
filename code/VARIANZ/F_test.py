@@ -24,8 +24,10 @@ def main():
     # Load data
     print('Load data...')
     hp = Hyperparameters()
-    #data = np.load(hp.results_dir + 'eval_vecs_' + hp.gender + '.npz')
-    data = np.load('../../data/results/' + 'eval_vecs_' + hp.gender + '.npz')
+    if hp.redundant_predictors:
+        data = np.load(hp.results_dir + 'eval_vecs_' + hp.gender + '.npz')
+    else:
+        data = np.load(hp.results_dir + 'eval_vecs_' + hp.gender + '_no_redundancies.npz')
 
     # evaluation arrays
     r2_vec_cox = data['r2_vec_cox']

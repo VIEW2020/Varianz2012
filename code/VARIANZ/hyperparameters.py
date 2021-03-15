@@ -14,10 +14,10 @@ class Hyperparameters:
     
         ### General #########################################################
         
-        self.gender = 'females'
+        self.gender = 'males'
         self.min_count = 500 # codes whose occurrence is less than min_count are encoded as OTHER
         self.num_folds = 5
-        self.num_trials = 100
+        self.num_trials = 10
         
         # Data
         self.data_dir = '../../data/'
@@ -74,3 +74,5 @@ class Hyperparameters:
             self.learning_rate = 1e-3
         
         self.redundant_predictors = False
+        self.reduced_col_list = ['nhi_age', 'en_nzdep_q', 'en_prtsd_eth_2', 'en_prtsd_eth_3', 'en_prtsd_eth_9', 'en_prtsd_eth_43']
+

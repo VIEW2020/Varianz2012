@@ -34,7 +34,6 @@ def main():
     print('Load data...')
     data = np.load(hp.data_pp_dir + 'data_arrays_' + hp.gender + '.npz')
     df_index_code = feather.read_dataframe(hp.data_pp_dir + 'df_index_code_' + hp.gender + '.feather')
-    cols_list = load_obj(hp.data_pp_dir + 'cols_list.pkl')
     
     print('Test on each fold...')
     for fold in range(hp.num_folds):
@@ -45,7 +44,11 @@ def main():
             x = data['x'][idx]
             codes = data['codes'][idx]
             month = data['month'][idx]
-            diagt = data['diagt'][idx]            
+            diagt = data['diagt'][idx]
+
+            if not hp.redundant_predictors:
+                cols_list = load_obj(hp.data_pp_dir + 'cols_list.pkl')
+                x = x[:, [cols_list.index(i) for i in hp.reduced_col_list]]            
 
             ####################################################################################################### 
 
@@ -60,8 +63,12 @@ def main():
             net.eval()
 
             # Trained models
-            tmp = listdir(hp.log_dir + 'fold_' + str(fold) + '_' + str(1-swap) + '/')
-            models = ['fold_' + str(fold) + '_' + str(1-swap) + '/' + i for i in tmp if '.pt' in i]
+            if hp.redundant_predictors:
+                tmp = listdir(hp.log_dir + 'fold_' + str(fold) + '_' + str(1-swap) + '/')
+                models = ['fold_' + str(fold) + '_' + str(1-swap) + '/' + i for i in tmp if '.pt' in i]
+            else:
+                tmp = listdir(hp.log_dir + 'fold_' + str(fold) + '_' + str(1-swap) + '_no_redundancies/')
+                models = ['fold_' + str(fold) + '_' + str(1-swap) + '_no_redundancies/' + i for i in tmp if '.pt' in i]            
             lph_matrix = np.zeros((x.shape[0], len(models)))
 
             for i in range(len(models)):
@@ -83,7 +90,10 @@ def main():
             df_cml['LPH'] = lph_matrix.mean(axis=1)
             
             print('Saving log proportional hazards for fold...')
-            df_cml.to_feather(hp.results_dir + 'df_cml_' + hp.gender + '_fold_' + str(fold) + '_' + str(swap) + '.feather')
+            if hp.redundant_predictors:
+                df_cml.to_feather(hp.results_dir + 'df_cml_' + hp.gender + '_fold_' + str(fold) + '_' + str(swap) + '.feather')
+            else:
+                df_cml.to_feather(hp.results_dir + 'df_cml_' + hp.gender + '_fold_' + str(fold) + '_' + str(swap) + '_no_redundancies.feather')
     
     
 if __name__ == '__main__':

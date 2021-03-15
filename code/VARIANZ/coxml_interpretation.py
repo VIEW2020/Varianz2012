@@ -71,7 +71,10 @@ def main():
     num_embeddings = df_index_code.shape[0]
     
     print('Add standard columns...')
-    cols_list = load_obj(hp.data_pp_dir + 'cols_list.pkl')
+    if hp.redundant_predictors:
+        cols_list = load_obj(hp.data_pp_dir + 'cols_list.pkl')
+    else:
+        cols_list = hp.reduced_col_list
     num_cols = len(cols_list)
     df_cols = pd.DataFrame({'TYPE': 2, 'DESCRIPTION': cols_list})
     df_index_code = pd.concat([df_cols, df_index_code], sort=False)
@@ -81,8 +84,12 @@ def main():
     print('Compute HRs...')
 
     # Trained models
-    tmp = listdir(hp.log_dir + 'all/')
-    models = ['all/' + i for i in tmp if '.pt' in i]    
+    if hp.redundant_predictors:
+        tmp = listdir(hp.log_dir + 'all/')
+        models = ['all/' + i for i in tmp if '.pt' in i]    
+    else:
+        tmp = listdir(hp.log_dir + 'all_no_redundancies/')
+        models = ['all_no_redundancies/' + i for i in tmp if '.pt' in i]    
 
     log_hr_columns = np.zeros((num_cols, len(models)))
     log_hr_embeddings = np.zeros((num_embeddings, len(models)))
@@ -142,8 +149,13 @@ def main():
         
     # Save
     df_index_code.sort_values(by=['TYPE', 'HR'], ascending=False, inplace=True)
-    df_index_code.to_csv(hp.results_dir + 'hr_addcodes_' + hp.gender + '.csv', index=False)
-    df_index_code.reset_index(drop=True).to_feather(hp.results_dir + 'hr_addcodes_' + hp.gender + '.feather')
+    if hp.redundant_predictors:
+        df_index_code.to_csv(hp.results_dir + 'hr_addcodes_' + hp.gender + '.csv', index=False)
+        df_index_code.reset_index(drop=True).to_feather(hp.results_dir + 'hr_addcodes_' + hp.gender + '.feather')
+    else:
+        df_index_code.to_csv(hp.results_dir + 'hr_addcodes_' + hp.gender + '_no_redundancies.csv', index=False)
+        df_index_code.reset_index(drop=True).to_feather(hp.results_dir + 'hr_addcodes_' + hp.gender + '_no_redundancies.feather')
+
     
 if __name__ == '__main__':
     main()

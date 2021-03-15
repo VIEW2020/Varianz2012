@@ -40,7 +40,10 @@ def main():
     means = np.load(hp.data_pp_dir + 'means_' + hp.gender + '.npz')
 
     print('Add standard columns...')
-    cols_list = load_obj(hp.data_pp_dir + 'cols_list.pkl')
+    if hp.redundant_predictors:
+        cols_list = load_obj(hp.data_pp_dir + 'cols_list.pkl')
+    else:
+        cols_list = hp.reduced_col_list
     num_cols = len(cols_list)
 
     #######################################################################################################
@@ -48,8 +51,12 @@ def main():
     print('Compute HRs...')
 
     # Trained models
-    tmp = listdir(hp.log_dir + 'all/')
-    models = ['all/' + i for i in tmp if '.pt' in i]    
+    if hp.redundant_predictors:
+        tmp = listdir(hp.log_dir + 'all/')
+        models = ['all/' + i for i in tmp if '.pt' in i]    
+    else:
+        tmp = listdir(hp.log_dir + 'all_no_redundancies/')
+        models = ['all_no_redundancies/' + i for i in tmp if '.pt' in i]    
 
     log_hr_matrix = np.zeros((len(range(30, 75)), len(models)))
 
