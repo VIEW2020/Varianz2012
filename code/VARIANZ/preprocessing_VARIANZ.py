@@ -15,7 +15,8 @@ def main():
     hp = Hyperparameters()
     
     # Load data
-    df = feather.read_dataframe(hp.data_dir + 'Py_VARIANZ_2012_v3-1.feather')
+    #df = feather.read_dataframe(hp.data_dir + 'Py_VARIANZ_2012_v3-1.feather')
+    df = pd.read_feather(hp.data_dir + 'Py_VARIANZ_2012_v3-1.feather')
     
     # Exclude
     df = df[~df['ph_loopdiuretics_prior_5yrs_3evts'].astype(bool)]
@@ -47,7 +48,7 @@ def main():
     beginning = pd.to_datetime({'year':[2012], 'month':[12], 'day':[31]})[0]
     df['TIME'] = (df['EVENT_DATE'] - beginning).dt.days.astype(int)
     df['EVENT'] = df['out_broad_cvd'] | df['imp_fatal_cvd']
-    
+
     # Descriptive statistics
     num_participants = len(df.index)
     print('Total participants: {}'.format(num_participants))
@@ -137,7 +138,11 @@ def main():
     time_to_CVD_females, time_to_CVD_females_Q1, time_to_CVD_females_Q3 = tmp_females.median(), tmp_females.quantile(0.25), tmp_females.quantile(0.75)
     print('Time to CVD Men: {:.1f} ({:.1f}, {:.1f})'.format(time_to_CVD_males, time_to_CVD_males_Q1, time_to_CVD_males_Q3))
     print('Time to CVD Women: {:.1f} ({:.1f}, {:.1f})'.format(time_to_CVD_females, time_to_CVD_females_Q1, time_to_CVD_females_Q3))
-    
+    num_censored_5y_males = (1-df.loc[df['gender_code'] & (df['TIME'] == 1826), 'EVENT']).sum()
+    num_censored_5y_females = (1-df.loc[~df['gender_code'] & (df['TIME'] == 1826), 'EVENT']).sum()
+    print('Censored at 5 years Men: {} ({:.1f}%)'.format(num_censored_5y_males, 100*num_censored_5y_males/num_males))
+    print('Censored at 5 years Women: {} ({:.1f}%)'.format(num_censored_5y_females, 100*num_censored_5y_females/num_females))
+
     # Center age and deprivation index, separately for males and females
     mean_age_males = df.loc[df['gender_code'], 'nhi_age'].mean()
     mean_age_females = df.loc[~df['gender_code'], 'nhi_age'].mean()
